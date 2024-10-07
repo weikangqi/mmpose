@@ -358,7 +358,8 @@ def process_scene_anno(scene: str, annotation_root: str, splits: np.array,
         keypoints_2d = joint_img[:, :2].copy()
         keypoints_3d = joint_img.copy()
         keypoints_valid = coord_valid.reshape((-1, 1))
-
+        import pdb
+        pdb.set_trace()
         ann['keypoints'] = keypoints_2d.tolist()
         ann['keypoints_3d'] = keypoints_3d.tolist()
         ann['keypoints_valid'] = keypoints_valid.tolist()
@@ -403,7 +404,7 @@ if __name__ == '__main__':
     parser.add_argument('--data-root', type=str, default='data/UBody')
     parser.add_argument('--human-model-path', type=str, default='data/SMPLX')
     parser.add_argument(
-        '--nproc', default=8, type=int, help='number of process')
+        '--nproc', default=1, type=int, help='number of process')
     args = parser.parse_args()
 
     split_path = f'{args.data_root}/splits/intra_scene_test_list.npy'

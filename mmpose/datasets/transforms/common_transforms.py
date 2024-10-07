@@ -1066,6 +1066,7 @@ class GenerateTarget(BaseTransform):
                 encoded['keypoint_weights'] = encoded[
                     'keypoint_weights'] * results['dataset_keypoint_weights']
 
+        # import pdb; pdb.set_trace()
         results.update(encoded)
 
         return results

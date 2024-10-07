@@ -27,7 +27,8 @@ class UnrealPoseDataset(BaseCocoStyleDataset):
         16: 'right_ankle',
         17: 'neck',
         18: 'head',
-        19: 'head_top'
+        19: 'head_top',
+        20: 'pelvis'
     Args:
         ann_file (str): Annotation file path. Default: ''.
         bbox_file (str, optional): Detection result file path. If

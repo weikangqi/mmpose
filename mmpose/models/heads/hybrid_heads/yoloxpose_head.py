@@ -503,7 +503,7 @@ class YOLOXPoseHead(BaseModule):
         gt_instances = data_sample.gt_instance_labels
         gt_fields = data_sample.get('gt_fields', dict())
         num_gts = len(gt_instances)
-
+        import pdb; pdb.set_trace()
         # No target
         if num_gts == 0:
             cls_target = cls_scores.new_zeros((0, self.num_classes))

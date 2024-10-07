@@ -1,4 +1,4 @@
-_base_ = ['../../../_base_/default_runtime.py']
+_base_ = ['../../../configs/_base_/default_runtime.py']
 
 # runtime
 train_cfg = dict(max_epochs=600, val_interval=20, dynamic_intervals=[(580, 1)])
@@ -253,7 +253,7 @@ model = dict(
             num_outs=2)),
     head=dict(
         type='RTMOHead',
-        num_keypoints=17,
+        num_keypoints=20,
         featmap_strides=(16, 32),
         head_module_cfg=dict(
             num_classes=1,

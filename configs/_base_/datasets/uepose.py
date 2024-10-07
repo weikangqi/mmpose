@@ -135,7 +135,11 @@ dataset_info = dict(
         19: 
         dict(
             name='head_top', id=19, color=[255, 0, 127], type='upper',
-            swap='')
+            swap=''),
+        20: 
+        dict(
+            name='pelvis', id=20, color=[255, 0, 127], type='upper',
+            swap=''),
     },
     skeleton_info={
         0:
@@ -191,14 +195,18 @@ dataset_info = dict(
         dict(link=('right_hip', 'neck'), id=22, color=[255, 0, 127]),
         23:
         dict(link=('neck', 'head'), id=23, color=[255, 0, 127]),
-        24:
-        dict(link=('head', 'head_top'), id=24, color=[255, 0, 127])
+        # 24:
+        # dict(link=('head', 'head_top'), id=24, color=[255, 0, 127]),
+        # 25:
+        #     dict(link=('left_hip', 'pelvis'), id=25, color=[51, 153, 255]),
+        #      26:
+        #     dict(link=('right_hip', 'pelvis'), id=25, color=[51, 153, 255]),
     },
     joint_weights=[
         1., 1., 1., 1., 1., 1., 1., 1.2, 1.2, 1.5, 1.5, 1., 1., 1.2, 1.2, 1.5,
-        1.5,1,1,1
+        1.5,1,1,1,1
     ],
     sigmas=[
         0.026, 0.025, 0.025, 0.035, 0.035, 0.079, 0.079, 0.072, 0.072, 0.062,
-        0.062, 0.107, 0.107, 0.087, 0.087, 0.089, 0.089,0.089, 0.089,0.089
+        0.062, 0.107, 0.107, 0.087, 0.087, 0.089, 0.089,0.089, 0.089,0.089,0.089
     ])

@@ -922,7 +922,7 @@ class RTMOHead(YOLOXPoseHead):
                 - displacements (Tensor): The predicted displacement fields
                     in shape (K*2, h, w)
         """
-
+        # import pdb; pdb.set_trace()
         cls_scores, bbox_preds, _, kpt_vis, pose_vecs = self.forward(feats)
 
         cfg = copy.deepcopy(test_cfg)
@@ -957,6 +957,7 @@ class RTMOHead(YOLOXPoseHead):
                                               flatten_priors, flatten_stride)
 
         results_list = []
+        # import pdb; pdb.set_trace()
         for (bboxes, scores, kpt_vis, pose_vecs,
              img_meta) in zip(flatten_bbox_preds, flatten_cls_scores,
                               flatten_kpt_vis, flatten_pose_vecs,

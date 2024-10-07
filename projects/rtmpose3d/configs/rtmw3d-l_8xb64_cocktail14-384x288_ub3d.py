@@ -12,12 +12,12 @@ visualizer = dict(
     type='Pose3dLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 
 # runtime
-max_epochs = 270
+max_epochs = 100
 stage2_num_epochs = 10
 base_lr = 5e-4
 num_keypoints = 133
 
-train_cfg = dict(max_epochs=max_epochs, val_interval=10)
+train_cfg = dict(max_epochs=max_epochs, val_interval=5)
 randomness = dict(seed=2024)
 
 # optimizer
@@ -94,7 +94,7 @@ model = dict(
     head=dict(
         type='RTMW3DHead',
         in_channels=1024,
-        out_channels=133,
+        out_channels=num_keypoints,
         input_size=codec['input_size'],
         in_featuremap_size=tuple([s // 32 for s in codec['input_size']]),
         simcc_split_ratio=codec['simcc_split_ratio'],
@@ -197,68 +197,68 @@ train_pipeline_stage2 = [
 
 # mapping
 
-aic_coco133 = [(0, 6), (1, 8), (2, 10), (3, 5), (4, 7), (5, 9), (6, 12),
-               (7, 14), (8, 16), (9, 11), (10, 13), (11, 15)]
+# aic_coco133 = [(0, 6), (1, 8), (2, 10), (3, 5), (4, 7), (5, 9), (6, 12),
+#                (7, 14), (8, 16), (9, 11), (10, 13), (11, 15)]
 
-crowdpose_coco133 = [(0, 5), (1, 6), (2, 7), (3, 8), (4, 9), (5, 10), (6, 11),
-                     (7, 12), (8, 13), (9, 14), (10, 15), (11, 16)]
+# crowdpose_coco133 = [(0, 5), (1, 6), (2, 7), (3, 8), (4, 9), (5, 10), (6, 11),
+#                      (7, 12), (8, 13), (9, 14), (10, 15), (11, 16)]
 
-mpii_coco133 = [
-    (0, 16),
-    (1, 14),
-    (2, 12),
-    (3, 11),
-    (4, 13),
-    (5, 15),
-    (10, 10),
-    (11, 8),
-    (12, 6),
-    (13, 5),
-    (14, 7),
-    (15, 9),
-]
+# mpii_coco133 = [
+#     (0, 16),
+#     (1, 14),
+#     (2, 12),
+#     (3, 11),
+#     (4, 13),
+#     (5, 15),
+#     (10, 10),
+#     (11, 8),
+#     (12, 6),
+#     (13, 5),
+#     (14, 7),
+#     (15, 9),
+# ]
 
-jhmdb_coco133 = [
-    (3, 6),
-    (4, 5),
-    (5, 12),
-    (6, 11),
-    (7, 8),
-    (8, 7),
-    (9, 14),
-    (10, 13),
-    (11, 10),
-    (12, 9),
-    (13, 16),
-    (14, 15),
-]
+# jhmdb_coco133 = [
+#     (3, 6),
+#     (4, 5),
+#     (5, 12),
+#     (6, 11),
+#     (7, 8),
+#     (8, 7),
+#     (9, 14),
+#     (10, 13),
+#     (11, 10),
+#     (12, 9),
+#     (13, 16),
+#     (14, 15),
+# ]
 
-halpe_coco133 = [(i, i)
-                 for i in range(17)] + [(20, 17), (21, 20), (22, 18), (23, 21),
-                                        (24, 19),
-                                        (25, 22)] + [(i, i - 3)
-                                                     for i in range(26, 136)]
+# halpe_coco133 = [(i, i)
+#                  for i in range(17)] + [(20, 17), (21, 20), (22, 18), (23, 21),
+#                                         (24, 19),
+#                                         (25, 22)] + [(i, i - 3)
+#                                                      for i in range(26, 136)]
 
-posetrack_coco133 = [
-    (0, 0),
-    (3, 3),
-    (4, 4),
-    (5, 5),
-    (6, 6),
-    (7, 7),
-    (8, 8),
-    (9, 9),
-    (10, 10),
-    (11, 11),
-    (12, 12),
-    (13, 13),
-    (14, 14),
-    (15, 15),
-    (16, 16),
-]
+# posetrack_coco133 = [
+#     (0, 0),
+#     (3, 3),
+#     (4, 4),
+#     (5, 5),
+#     (6, 6),
+#     (7, 7),
+#     (8, 8),
+#     (9, 9),
+#     (10, 10),
+#     (11, 11),
+#     (12, 12),
+#     (13, 13),
+#     (14, 14),
+#     (15, 15),
+#     (16, 16),
+# ]
 
-humanart_coco133 = [(i, i) for i in range(17)] + [(17, 99), (18, 120),
-                                                  (19, 17), (20, 20)]
+# humanart_coco133 = [(i, i) for i in range(17)] + [(17, 99), (18, 120),
+#                                                   (19, 17), (20, 20)]
 
 data_mode = 'topdown'
 data_root = 'data/'
@@ -382,16 +382,16 @@ face_pipeline = [
         rotate_factor=0),
 ]
 
-wflw_coco133 = [(i * 2, 23 + i)
-                for i in range(17)] + [(33 + i, 40 + i) for i in range(5)] + [
-                    (42 + i, 45 + i) for i in range(5)
-                ] + [(51 + i, 50 + i)
-                     for i in range(9)] + [(60, 59), (61, 60), (63, 61),
-                                           (64, 62), (65, 63), (67, 64),
-                                           (68, 65), (69, 66), (71, 67),
-                                           (72, 68), (73, 69),
-                                           (75, 70)] + [(76 + i, 71 + i)
-                                                        for i in range(20)]
+# wflw_coco133 = [(i * 2, 23 + i)
+#                 for i in range(17)] + [(33 + i, 40 + i) for i in range(5)] + [
+#                     (42 + i, 45 + i) for i in range(5)
+#                 ] + [(51 + i, 50 + i)
+#                      for i in range(9)] + [(60, 59), (61, 60), (63, 61),
+#                                            (64, 62), (65, 63), (67, 64),
+#                                            (68, 65), (69, 66), (71, 67),
+#                                            (72, 68), (73, 69),
+#                                            (75, 70)] + [(76 + i, 71 + i)
+#                                                         for i in range(20)]
 # dataset_wflw = dict(
 #     type='WFLWDataset',
 #     data_root=data_root,
@@ -421,10 +421,10 @@ wflw_coco133 = [(i * 2, 23 + i)
 #     ],
 # )
 
-cofw_coco133 = [(0, 40), (2, 44), (4, 42), (1, 49), (3, 45), (6, 47), (8, 59),
-                (10, 62), (9, 68), (11, 65), (18, 54), (19, 58), (20, 53),
-                (21, 56), (22, 71), (23, 77), (24, 74), (25, 85), (26, 89),
-                (27, 80), (28, 31)]
+# cofw_coco133 = [(0, 40), (2, 44), (4, 42), (1, 49), (3, 45), (6, 47), (8, 59),
+#                 (10, 62), (9, 68), (11, 65), (18, 54), (19, 58), (20, 53),
+#                 (21, 56), (22, 71), (23, 77), (24, 74), (25, 85), (26, 89),
+#                 (27, 80), (28, 31)]
 # dataset_cofw = dict(
 #     type='COFWDataset',
 #     data_root=data_root,
@@ -439,16 +439,16 @@ cofw_coco133 = [(0, 40), (2, 44), (4, 42), (1, 49), (3, 45), (6, 47), (8, 59),
 #     ],
 # )
 
-lapa_coco133 = [(i * 2, 23 + i) for i in range(17)] + [
-    (33 + i, 40 + i) for i in range(5)
-] + [(42 + i, 45 + i) for i in range(5)] + [
-    (51 + i, 50 + i) for i in range(4)
-] + [(58 + i, 54 + i) for i in range(5)] + [(66, 59), (67, 60), (69, 61),
-                                            (70, 62), (71, 63), (73, 64),
-                                            (75, 65), (76, 66), (78, 67),
-                                            (79, 68), (80, 69),
-                                            (82, 70)] + [(84 + i, 71 + i)
-                                                         for i in range(20)]
+# lapa_coco133 = [(i * 2, 23 + i) for i in range(17)] + [
+#     (33 + i, 40 + i) for i in range(5)
+# ] + [(42 + i, 45 + i) for i in range(5)] + [
+#     (51 + i, 50 + i) for i in range(4)
+# ] + [(58 + i, 54 + i) for i in range(5)] + [(66, 59), (67, 60), (69, 61),
+#                                             (70, 62), (71, 63), (73, 64),
+#                                             (75, 65), (76, 66), (78, 67),
+#                                             (79, 68), (80, 69),
+#                                             (82, 70)] + [(84 + i, 71 + i)
+#                                                          for i in range(20)]
 # dataset_lapa = dict(
 #     type='LapaDataset',
 #     data_root=data_root,
@@ -509,12 +509,12 @@ hand_pipeline = [
         rotate_factor=0),
 ]
 
-interhand_left = [(21, 95), (22, 94), (23, 93), (24, 92), (25, 99), (26, 98),
-                  (27, 97), (28, 96), (29, 103), (30, 102), (31, 101),
-                  (32, 100), (33, 107), (34, 106), (35, 105), (36, 104),
-                  (37, 111), (38, 110), (39, 109), (40, 108), (41, 91)]
-interhand_right = [(i - 21, j + 21) for i, j in interhand_left]
-interhand_coco133 = interhand_right + interhand_left
+# interhand_left = [(21, 95), (22, 94), (23, 93), (24, 92), (25, 99), (26, 98),
+#                   (27, 97), (28, 96), (29, 103), (30, 102), (31, 101),
+#                   (32, 100), (33, 107), (34, 106), (35, 105), (36, 104),
+#                   (37, 111), (38, 110), (39, 109), (40, 108), (41, 91)]
+# interhand_right = [(i - 21, j + 21) for i, j in interhand_left]
+# interhand_coco133 = interhand_right + interhand_left
 
 # dataset_interhand2d = dict(
 #     type='InterHand2DDoubleDataset',
@@ -562,11 +562,48 @@ interhand_coco133 = interhand_right + interhand_left
 #     test_mode=False,
 # )
 
+
+map_ubody3d_to_h3wb = [
+    # body 
+    [1,11],
+    [2,12],
+    [3,13],
+    [4,14],
+    [5,15],
+    [6,16],
+    [8,5],
+    [9,6],
+    [10,7],
+    [11,8],
+    [12,9],
+    [13,10],
+    [14,17],
+    [15,18],
+    [16,19],
+    [17,20],
+    [18,21],
+    [19,22],
+    [20,3],
+    [21,4],
+    [22,1],
+    [23,2],
+    [24,0]
+    # hand
+    
+    
+    # face
+    
+]
+
 # ubody dataset
 scenes = [
-    'Magic_show', 'Entertainment', 'ConductMusic', 'Online_class', 'TalkShow',
-    'Speech', 'Fitness', 'Interview', 'Olympic', 'TVShow', 'Singing',
-    'SignLanguage', 'Movie', 'LiveVlog', 'VideoConference'
+    # 'Magic_show', 
+    # 'Entertainment', 
+    'Fitness',
+    # 'Interview'
+    # 'ConductMusic', 'Online_class', 'TalkShow',
+    # 'Speech', , 'Interview', 'Olympic', 'TVShow', 'Singing',
+    # 'SignLanguage', 'Movie', 'LiveVlog', 'VideoConference'
 ]
 ubody_train_datasets = []
 for scene in scenes:
@@ -580,7 +617,14 @@ for scene in scenes:
         seq_len=1,
         data_prefix=dict(img='images/'),
         subset_frac=0.1,
-        pipeline=[])
+        pipeline=[
+        dict(
+            type='KeypointConverter',
+            num_keypoints=num_keypoints,
+            mapping=map_ubody3d_to_h3wb,
+        )
+    ],
+        metainfo= dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/h3wb.py'))
     ubody_train_datasets.append(ubody)
 
 
@@ -597,8 +641,14 @@ for scene in scenes:
         seq_len=1,
         data_prefix=dict(img='images/'),
         subset_frac=0.1,
-        pipeline=[])
-    ubody_train_datasets.append(ubody)
+        pipeline=[
+        dict(
+            type='KeypointConverter',
+            num_keypoints=num_keypoints,
+            mapping=map_ubody3d_to_h3wb,
+        )],
+        metainfo= dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/h3wb.py'))
+    ubody_val_datasets.append(ubody)
 
 # h3wb dataset
 # h3wb_dataset = dict(
@@ -619,36 +669,19 @@ train_datasets = [
     # h3wb_dataset,
 ]
 
-mapping_ubody_coco133 = [
-    [0,0],
-    [1,1],
-    [2,4],
-    [3,2],
-    [4,5],
-    [5,3],
-    [6,6],
-    [7,9],
-    [8,11],
-    [9,14],
-    [10,12],
-    [11,15],
-    [12,13],
-    [13,16],
-    
-    
-]
+
 
 # data loaders
 train_dataloader = dict(
-    batch_size=64,
-    num_workers=10,
+    batch_size=96,
+    num_workers=16,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type='CombinedDataset',
         datasets=train_datasets,
         pipeline=train_pipeline,
-        metainfo=dict(from_file='../../../configs/_base_/datasets/h3wb.py'),
+        metainfo=dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/h3wb.py'),
         test_mode=False))
 # hooks
 custom_hooks = [
@@ -699,16 +732,16 @@ val_datasets = [
 # test_dataloader = val_dataloader
 
 val_dataloader = dict(
-    batch_size=64,
-    num_workers=10,
+    batch_size=96,
+    num_workers=16,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type='CombinedDataset',
         datasets=val_datasets,
         pipeline=val_pipeline,
-        metainfo=dict(from_file='mmpose::_base_/datasets/h3wb.py'),
-        test_mode=False))
+        metainfo=dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/h3wb.py'),
+        test_mode=True))
 
 test_dataloader = val_dataloader
 # evaluators

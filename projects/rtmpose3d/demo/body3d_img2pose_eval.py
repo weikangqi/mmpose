@@ -124,6 +124,13 @@ def parse_args():
         help='Inference mode. If set to True, can not use future frame'
         'information when using multi frames for inference in the 2D pose'
         'detection stage. Default: False.')
+    parser.add_argument(
+        '--input-type',
+        action='store_true',
+        default="uepose",
+        help='Inference mode. If set to True, can not use future frame'
+        'information when using multi frames for inference in the 2D pose'
+        'detection stage. Default: False.')
 
     args = parser.parse_args()
     return args
@@ -299,10 +306,11 @@ def main():
     pose_estimator.cfg.visualizer.kpt_color = det_kpt_color
     visualizer = VISUALIZERS.build(pose_estimator.cfg.visualizer)
 
-    if args.input == 'webcam':
-        input_type = 'webcam'
-    else:
-        input_type = mimetypes.guess_type(args.input)[0].split('/')[0]
+    # if args.input == 'webcam':
+    #     input_type = 'webcam'
+    # else:
+    #     input_type = mimetypes.guess_type(args.input)[0].split('/')[0]
+    input_type="uepose"
 
     if args.output_root == '':
         save_output = False
@@ -324,118 +332,81 @@ def main():
 
     pose_est_results_list = []
     pred_instances_list = []
-    if input_type == 'image':
-        frame = mmcv.imread(args.input, channel_order='rgb')
-        _, _, pred_3d_instances, _ = process_one_image(
-            args=args,
-            detector=detector,
-            frame=args.input,
-            frame_idx=0,
-            pose_estimator=pose_estimator,
-            pose_est_results_last=[],
-            pose_est_results_list=pose_est_results_list,
-            next_id=0,
-            visualize_frame=frame,
-            visualizer=visualizer)
+    # if input_type == 'image':
+    #     frame = mmcv.imread(args.input, channel_order='rgb')
+    #     _, _, pred_3d_instances, _ = process_one_image(
+    #         args=args,
+    #         detector=detector,
+    #         frame=args.input,
+    #         frame_idx=0,
+    #         pose_estimator=pose_estimator,
+    #         pose_est_results_last=[],
+    #         pose_est_results_list=pose_est_results_list,
+    #         next_id=0,
+    #         visualize_frame=frame,
+    #         visualizer=visualizer)
 
-        if args.save_predictions:
-            # save prediction results
-            pred_instances_list = split_instances(pred_3d_instances)
+        # if args.save_predictions:
+        #     # save prediction results
+        #     pred_instances_list = split_instances(pred_3d_instances)
 
-        if save_output:
-            frame_vis = visualizer.get_image()
-            mmcv.imwrite(mmcv.rgb2bgr(frame_vis), output_file)
+    #     if save_output:
+    #         frame_vis = visualizer.get_image()
+            # mmcv.imwrite(mmcv.rgb2bgr(frame_vis), output_file)
 
-    elif input_type in ['webcam', 'video']:
-        next_id = 0
-        pose_est_results = []
-
-        if args.input == 'webcam':
-            video = cv2.VideoCapture(0)
-        else:
-            video = cv2.VideoCapture(args.input)
-
-        (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
-        if int(major_ver) < 3:
-            fps = video.get(cv2.cv.CV_CAP_PROP_FPS)
-        else:
-            fps = video.get(cv2.CAP_PROP_FPS)
-
-        video_writer = None
-        frame_idx = 0
-
-        while video.isOpened():
-            success, frame = video.read()
-            frame_idx += 1
-
-            if not success:
-                break
-
-            pose_est_results_last = pose_est_results
-
-            # First stage: 2D pose detection
-            # make person results for current image
-            (pose_est_results, pose_est_results_list, pred_3d_instances,
-             next_id) = process_one_image(
-                 args=args,
-                 detector=detector,
-                 frame=frame,
-                 frame_idx=frame_idx,
-                 pose_estimator=pose_estimator,
-                 pose_est_results_last=pose_est_results_last,
-                 pose_est_results_list=pose_est_results_list,
-                 next_id=next_id,
-                 visualize_frame=mmcv.bgr2rgb(frame),
-                 visualizer=visualizer)
-
+    if input_type == 'uepose':
+        pass
+        # 加载一个annotation文件，逐帧处理
+        uepose_annotation_path = args.input
+        uepose_data_dir = '/workspace/mmpose3d/data/uecoco/test'
+        uepose_annotation = json.load(open(uepose_annotation_path, 'r'))
+        
+        # 读取图片
+        images_data = uepose_annotation['images']
+        
+        for image_data in images_data:
+            image_id = image_data['id']
+            filename = image_data['file_name']
+            image_path = os.path.join(uepose_data_dir, filename)
+            frame = mmcv.imread(image_path, channel_order='rgb')
+            _, _, pred_3d_instances, _ = process_one_image(
+                    args=args,
+                    detector=detector,
+                    frame=frame,
+                    frame_idx=0,
+                    pose_estimator=pose_estimator,
+                    pose_est_results_last=[],
+                    pose_est_results_list=pose_est_results_list,
+                    next_id=0,
+                    visualize_frame=frame,
+                    visualizer=visualizer)
+            # print(type(pred_3d_instances))
             if args.save_predictions:
-                # save prediction results
-                pred_instances_list.append(
-                    dict(
-                        frame_id=frame_idx,
-                        instances=split_instances(pred_3d_instances)))
+                pred_instances_list = split_instances(pred_3d_instances)
+                import pdb
+                pdb.set_trace()
 
-            if save_output:
-                frame_vis = visualizer.get_image()
-                if video_writer is None:
-                    # the size of the image with visualization may vary
-                    # depending on the presence of heatmaps
-                    video_writer = cv2.VideoWriter(output_file, fourcc, fps,
-                                                   (frame_vis.shape[1],
-                                                    frame_vis.shape[0]))
-                video_writer.write(mmcv.rgb2bgr(frame_vis))
-
-            if args.show:
-                # press ESC to exit
-                if cv2.waitKey(5) & 0xFF == 27:
-                    break
-                time.sleep(args.show_interval)
-
-        video.release()
-
-        if video_writer:
-            video_writer.release()
     else:
         args.save_predictions = False
         raise ValueError(
             f'file {os.path.basename(args.input)} has invalid format.')
 
-    if args.save_predictions:
-        with open(args.pred_save_path, 'w') as f:
-            json.dump(
-                dict(
-                    meta_info=pose_estimator.dataset_meta,
-                    instance_info=pred_instances_list),
-                f,
-                indent='\t')
-        print(f'predictions have been saved at {args.pred_save_path}')
+    # if args.save_predictions:
+    #     with open(args.pred_save_path, 'w') as f:
+    #         json.dump(
+    #             dict(
+    #                 meta_info=pose_estimator.dataset_meta,
+    #                 instance_info=pred_instances_list),
+    #             f,
+    #             indent='\t')
+    #     print(f'predictions have been saved at {args.pred_save_path}')
 
-    if save_output:
-        input_type = input_type.replace('webcam', 'video')
-        print_log(
-            f'the output {input_type} has been saved at {output_file}',
-            logger='current',
-            level=logging.INFO)
+    # if save_output:
+    #     input_type = input_type.replace('webcam', 'video')
+    #     print_log(
+    #         f'the output {input_type} has been saved at {output_file}',
+    #         logger='current',
+    #         level=logging.INFO)
 
 
 if __name__ == '__main__':

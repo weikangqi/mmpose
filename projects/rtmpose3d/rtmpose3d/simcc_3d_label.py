@@ -64,8 +64,8 @@ class SimCC3DLabel(BaseKeypointCodec):
 
     instance_mapping_table = dict(
         bbox='bboxes',
-        bbox_score='bbox_scores',
-        bbox_scale='bbox_scales',
+        bbox_scores='bbox_scores',
+        bbox_scales='bbox_scales',
         lifting_target='lifting_target',
         lifting_target_visible='lifting_target_visible',
         camera_param='camera_params',
