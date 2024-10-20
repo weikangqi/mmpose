@@ -216,6 +216,7 @@ class YOLOXPoseHeadModule(BaseModule):
             bbox_preds.append(self.out_bbox[i](reg_feat))
             kpt_offsets.append(self.out_kpt[i](pose_feat))
             kpt_vis.append(self.out_kpt_vis[i](pose_feat))
+            
 
         return cls_scores, objectnesses, bbox_preds, kpt_offsets, kpt_vis
 
@@ -503,7 +504,7 @@ class YOLOXPoseHead(BaseModule):
         gt_instances = data_sample.gt_instance_labels
         gt_fields = data_sample.get('gt_fields', dict())
         num_gts = len(gt_instances)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # No target
         if num_gts == 0:
             cls_target = cls_scores.new_zeros((0, self.num_classes))

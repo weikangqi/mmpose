@@ -250,7 +250,7 @@ class Mosaic(MixImageTransform):
                 kpts *= scale_ratio
                 kpts[..., 0] += padw
                 kpts[..., 1] += padh
-
+                # print(data['keypoints_visible'].shape)
                 annos['keypoints'].append(kpts)
                 annos['keypoints_visible'].append(data['keypoints_visible'])
 

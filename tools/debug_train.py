@@ -9,8 +9,8 @@ from mmengine.runner import Runner
 
 def parse_args():
     
-    cfg_path = 'projects/rtmpose3d/configs/rtmw3d-l_8xb64_cocktail14-384x288_ub3d.py'
-    work_dir = 'work_dirs/rtmpose3d/rtmw3d-l_8xb64_cocktail14-384x288_ub3d'
+    cfg_path = 'projects/uepose3d/configs/rtmo-l_16xb16-600e_uecoco-256x256.py'
+    work_dir = 'work_dirs/uepose3d/rtmo-l_16xb16-600e_coco-640x480'
     
     parser = argparse.ArgumentParser(description='Train a pose model')
     parser.add_argument('--config',required=False, help='train config file path', default=cfg_path)

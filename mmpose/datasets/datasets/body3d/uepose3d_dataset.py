@@ -223,8 +223,9 @@ class UnrealPose3dDataset(BaseMocapDataset):
             # if 'w' not in cam_param or 'h' not in cam_param:
             #     cam_param['w'] = 1000
             #     cam_param['h'] = 1000
-
-            # cam_param = {'f': cam_param['focal'], 'c': cam_param['princpt']}
+            cam_param['w'] = 640
+            cam_param['h'] = 480
+            cam_param = {'f': [cam_param['K'][0][0],cam_param['K'][1][1]], 'c': [cam_param['K'][0][2],cam_param['K'][1][2]]}
 
             instance_info = {
                 'num_keypoints': num_keypoints,

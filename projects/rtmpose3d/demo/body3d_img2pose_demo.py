@@ -387,7 +387,7 @@ def main():
                  next_id=next_id,
                  visualize_frame=mmcv.bgr2rgb(frame),
                  visualizer=visualizer)
-
+            
             if args.save_predictions:
                 # save prediction results
                 pred_instances_list.append(

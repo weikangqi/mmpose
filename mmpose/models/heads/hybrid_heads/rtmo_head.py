@@ -765,7 +765,7 @@ class RTMOHead(YOLOXPoseHead):
         # 1. collect & reform predictions
         cls_scores, bbox_preds, kpt_offsets, kpt_vis, pose_vecs = self.forward(
             feats)
-
+        # print(pose_vecs[0].shape)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes,
@@ -782,6 +782,7 @@ class RTMOHead(YOLOXPoseHead):
         flatten_kpt_offsets = self._flatten_predictions(kpt_offsets)
         flatten_kpt_vis = self._flatten_predictions(kpt_vis)
         flatten_pose_vecs = self._flatten_predictions(pose_vecs)
+        
         flatten_bbox_decoded = self.decode_bbox(flatten_bbox_preds,
                                                 flatten_priors[..., :2],
                                                 flatten_priors[..., -1])
@@ -839,6 +840,7 @@ class RTMOHead(YOLOXPoseHead):
             if hasattr(self, 'loss_mle') and self.loss_mle.loss_weight > 0:
                 pose_vecs = flatten_pose_vecs.view(
                     -1, flatten_pose_vecs.size(-1))[pos_masks]
+                # print(flatten_pose_vecs.shape,pose_vecs.shape)
                 bbox_cs = torch.cat(
                     bbox_xyxy2cs(bbox_preds, self.bbox_padding), dim=1)
                 # 'cc' refers to 'cordinate classification'

@@ -48,7 +48,7 @@ def parse_args():
         type=str,
         default=None,
         help='Checkpoint file for the 3D pose estimator')
-    parser.add_argument('--input', type=str, default='', help='Video path')
+    parser.add_argument('--input', type=str, default='/workspace/MobileHumanPose3D/dataset/uecoco_3d/annotations/test.json', help='Video path')
     parser.add_argument(
         '--show',
         action='store_true',
@@ -358,7 +358,7 @@ def main():
         pass
         # 加载一个annotation文件，逐帧处理
         uepose_annotation_path = args.input
-        uepose_data_dir = '/workspace/mmpose3d/data/uecoco/test'
+        uepose_data_dir = '/workspace/MobileHumanPose3D/dataset/uecoco_3d/test'
         uepose_annotation = json.load(open(uepose_annotation_path, 'r'))
         
         # 读取图片
