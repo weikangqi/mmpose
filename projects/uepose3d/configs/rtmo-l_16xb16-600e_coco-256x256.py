@@ -1,8 +1,7 @@
 _base_ = ['../../../configs/_base_/default_runtime.py']
 
-
 # runtime
-train_cfg = dict(max_epochs=600, val_interval=20, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=600, val_interval=1, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
@@ -50,20 +49,20 @@ param_scheduler = [
 ]
 
 # data
-input_size = (640, 640)
+input_size = (256, 256)
 metafile = '/workspace/mmpose3d/configs/_base_/datasets/uepose.py'
 codec = dict(type='YOLOXPoseAnnotationProcessor', input_size=input_size)
-small_prefix='small_'
+
 train_pipeline_stage1 = [
     dict(type='LoadImage', backend_args=None),
     dict(
         type='Mosaic',
-        img_scale=(640, 640),
+        img_scale=input_size,
         pad_val=114.0,
         pre_transform=[dict(type='LoadImage', backend_args=None)]),
     dict(
         type='BottomupRandomAffine',
-        input_size=(640, 640),
+        input_size=input_size,
         shift_factor=0.1,
         rotate_factor=10,
         scale_factor=(0.75, 1.0),
@@ -75,7 +74,7 @@ train_pipeline_stage1 = [
     ),
     dict(
         type='YOLOXMixUp',
-        img_scale=(640, 640),
+        img_scale=input_size,
         ratio_range=(0.8, 1.6),
         pad_val=114.0,
         pre_transform=[dict(type='LoadImage', backend_args=None)]),
@@ -89,7 +88,7 @@ train_pipeline_stage2 = [
     dict(type='LoadImage'),
     dict(
         type='BottomupRandomAffine',
-        input_size=(640, 640),
+        input_size=input_size,
         scale_type='long',
         pad_val=(114, 114, 114),
         bbox_keep_corner=False,
@@ -105,6 +104,9 @@ train_pipeline_stage2 = [
 
 data_mode = 'bottomup'
 data_root = 'data/'
+
+# small_prefix='small_'
+small_prefix=''
 
 # train datasets
 coco_train_dataset = dict(
@@ -137,6 +139,17 @@ coco_val_dataset = dict(
 )
 
 
+uepose_val_dataset = dict(
+    type='UnrealPoseDataset',
+    data_root=data_root,
+    data_mode=data_mode,
+    ann_file='uecoco/annotations/test.json',
+    data_prefix=dict(img='uecoco/test/'),
+    pipeline = []
+)
+
+
+
 train_dataset = dict(
     type='CombinedDataset',
     metainfo=dict(from_file=metafile),
@@ -146,7 +159,6 @@ train_dataset = dict(
     sample_ratio_factor=[1],
     test_mode=False,
     pipeline=train_pipeline_stage1)
-
 
 
 
@@ -168,34 +180,6 @@ val_pipeline = [
                    'input_size', 'input_center', 'input_scale'))
 ]
 
-
-
-
-
-coco_val_dataset = dict(
-    type='CocoDataset',
-    data_root=data_root,
-    data_mode=data_mode,
-    ann_file=f'coco/annotations/{small_prefix}person_keypoints_val2017.json',
-    data_prefix=dict(img='coco/val2017/'),
-    pipeline=[
-        dict(
-        type='KeypointConverter',
-        num_keypoints=21,
-        mapping=[(i, i) for i in range(17)])
-    ],
-)
-
-val_dataset = dict(
-    type='CombinedDataset',
-    metainfo=dict(from_file=metafile),
-    datasets=[
-        coco_val_dataset,
-    ],
-    sample_ratio_factor=[1],
-    test_mode=True,
-    pipeline=val_pipeline)
-
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -203,25 +187,40 @@ val_dataloader = dict(
     pin_memory=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
-    dataset = val_dataset
+    dataset = dict(
+        type='CombinedDataset',
+        metainfo=dict(from_file=metafile),
+        datasets=[
+            coco_val_dataset,
+        ],
+        sample_ratio_factor=[1],
+        test_mode=True,
+        pipeline=val_pipeline)
     )
+   
 test_dataloader = val_dataloader
 
 # evaluators
+
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file='/workspace/MobileHumanPose3D/dataset/uecoco/annotations/test.json',
+#     score_mode='bbox',
+#     nms_mode='none'
+# )
+
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + f'coco/annotations/{small_prefix}person_keypoints_val2017.json',
+    ann_file=f'/workspace/mmpose3d/data/coco/annotations/{small_prefix}person_keypoints_val2017.json',
     score_mode='bbox',
     nms_mode='none',
-    pred_converter= dict(
-        type='KeypointConverter',
-        num_keypoints=21,
-        mapping=[(i, i) for i in range(17)]),
     gt_converter= dict(
         type='KeypointConverter',
         num_keypoints=21,
         mapping=[(i, i) for i in range(17)])
 )
+
+
 test_evaluator = val_evaluator
 
 # hooks
@@ -317,7 +316,7 @@ model = dict(
             num_outs=2)),
     head=dict(
         type='RTMOHead',
-        num_keypoints=17,
+        num_keypoints=21,
         featmap_strides=(16, 32),
         head_module_cfg=dict(
             num_classes=1,

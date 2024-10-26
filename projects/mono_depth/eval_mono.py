@@ -54,7 +54,7 @@ def eval_mpjpe(depth_model,data_dir,tag='test'):
     
     device = 'cpu'  # cpu, cuda, mps
     backend = 'onnxruntime'  # opencv, onnxruntime, openvino
-    body_model = Body(to_openpose=openpose_skeleton,
+    body_model = Body(to_openpose=openpose_skeleton,pose='rtmo',
                       mode='balanced',  # 'performance', 'lightweight', 'balanced'. Default: 'balanced'
                       backend=backend, device=device)
     
@@ -90,14 +90,14 @@ def eval_mpjpe(depth_model,data_dir,tag='test'):
         pred_keypoints[pred_keypoints[:,:,1]<0,1] = 0
         
         best_match,_ = calculate_best_matches(gt_kp2d[:,:17,0:2],pred_keypoints,gt_kp2d[:,:17,2],0.5)
-        for i in range(pred_keypoints.shape[0]):
+        for i in range(len(best_match)):
             pid = best_match[i]
             pred_p_kp2d = np.zeros([17,3])
-            pred_p_kp2d[:,:2]= pred_keypoints[i]
+            pred_p_kp2d[:,:2]= pred_keypoints[pid]
             # pred_p_kp2d = pred_p_kp2d[:,np.newaxis]
             pred_p_kp2d[:,2] = 1
             # gt_p_kp2d[:,2] = 1
-            gt_p_kp3d = gt_kp3d[pid][:17,:]
+            gt_p_kp3d = gt_kp3d[i][:17,:]
             pose2d_idx =  np.floor(pred_p_kp2d[:,0:2]).astype(np.int32)
             z = depth[pose2d_idx[:,1],pose2d_idx[:,0]].reshape(17,1)
             tmp =  z * pred_p_kp2d 
@@ -113,7 +113,7 @@ def eval_mpjpe(depth_model,data_dir,tag='test'):
             # pred_kp3d.append(pred_p_kp3d)
             dis = np.linalg.norm(gt_p_kp3d - pred_p_kp3d,axis=1)
             mpjpe = np.mean(dis[dis!=0]) * 1000
-            # print(mpjpe)
+            print(mpjpe)
             sum_mpjpe.append(mpjpe)
             
             

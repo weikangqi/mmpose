@@ -327,7 +327,7 @@ model = dict(
         loss_cls=dict(
             type='VariFocalLoss',
             reduction='sum',
-            use_target_weight=True,
+            use_target_weight=False,
             loss_weight=1.0),
         loss_bbox=dict(
             type='IoULoss',
@@ -342,12 +342,12 @@ model = dict(
             loss_weight=30.0),
         loss_vis=dict(
             type='BCELoss',
-            use_target_weight=True,
+            use_target_weight=False,
             reduction='mean',
             loss_weight=1.0),
         loss_mle=dict(
             type='MLECCLoss',
-            use_target_weight=True,
+            use_target_weight=False,
             loss_weight=1e-2,
         ),
         loss_bbox_aux=dict(type='L1Loss', reduction='sum', loss_weight=1.0),
