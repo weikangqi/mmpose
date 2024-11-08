@@ -1,7 +1,7 @@
 _base_ = ['../../../configs/_base_/default_runtime.py']
 
 # runtime
-train_cfg = dict(max_epochs=600, val_interval=10, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=1000, val_interval=10, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
@@ -208,7 +208,7 @@ train_dataset = dict(
 
 
 train_dataloader = dict(
-    batch_size=24,
+    batch_size=48,
     num_workers=8,
     persistent_workers=True,
     pin_memory=True,
@@ -226,8 +226,8 @@ val_pipeline = [
 ]
 
 val_dataloader = dict(
-    batch_size=1,
-    num_workers=2,
+    batch_size=16,
+    num_workers=4,
     persistent_workers=True,
     pin_memory=True,
     drop_last=False,
@@ -298,8 +298,8 @@ custom_hooks = [
 ]
 
 # model
-widen_factor = 1.0
-deepen_factor = 1.0
+widen_factor = 0.5
+deepen_factor = 0.33
 
 model = dict(
     type='BottomupPoseEstimator',
@@ -333,13 +333,13 @@ model = dict(
         init_cfg=dict(
             type='Pretrained',
             checkpoint='https://download.openmmlab.com/mmdetection/v2.0/'
-            'yolox/yolox_l_8x8_300e_coco/yolox_l_8x8_300e_coco'
-            '_20211126_140236-d3bd2b23.pth',
+            'yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_'
+            '20211121_095711-4592a793.pth',
             prefix='backbone.',
         )),
     neck=dict(
         type='HybridEncoder',
-        in_channels=[256, 512, 1024],
+        in_channels=[128, 256, 512],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,
@@ -355,7 +355,7 @@ model = dict(
             type='ChannelMapper',
             in_channels=[256, 256],
             kernel_size=1,
-            out_channels=512,
+            out_channels=256,
             act_cfg=None,
             norm_cfg=dict(type='BN'),
             num_outs=2)),
@@ -368,7 +368,7 @@ model = dict(
             in_channels=256,
             cls_feat_channels=256,
             channels_per_group=36,
-            pose_vec_channels=512,
+            pose_vec_channels=256,
             widen_factor=widen_factor,
             stacked_convs=2,
             norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
@@ -376,13 +376,14 @@ model = dict(
         assigner=dict(
             type='SimOTAAssigner',
             dynamic_k_indicator='oks',
-            oks_calculator=dict(type='PoseOKS', metainfo=metafile)),
+            oks_calculator=dict(type='PoseOKS', metainfo=metafile),
+            use_keypoints_for_center=True),
         prior_generator=dict(
             type='MlvlPointGenerator',
             centralize_points=True,
             strides=[16, 32]),
         dcc_cfg=dict(
-            in_channels=512,
+            in_channels=256,
             feat_channels=128,
             num_bins=(192, 256),
             spe_channels=128,
@@ -418,7 +419,7 @@ model = dict(
         loss_mle=dict(
             type='MLECCLoss',
             use_target_weight=True,
-            loss_weight=1e-2,
+            loss_weight=1.0,
         ),
         loss_bbox_aux=dict(type='L1Loss', reduction='sum', loss_weight=1.0),
     ),
