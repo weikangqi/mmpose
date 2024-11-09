@@ -7,39 +7,13 @@ import numpy as np
 from mmengine.fileio import exists, get_local_path
 from mmengine.utils import is_abs
 
-from mmpose.datasets.datasets import BaseMocapDataset
+from ._base.base_stereo_view_dataset import BaseStereoViewDataset
 from mmpose.registry import DATASETS
 from xtcocotools.coco import COCO
 
 @DATASETS.register_module()
-class UnrealPose3dDataset(BaseMocapDataset):
-    """Human3.6M dataset for 3D human pose estimation.
-
-    "Human3.6M: Large Scale Datasets and Predictive Methods for 3D Human
-    Sensing in Natural Environments", TPAMI`2014.
-    More details can be found in the `paper
-    <http://vision.imar.ro/human3.6m/pami-h36m.pdf>`__.
-
-    Human3.6M keypoint indexes::
-
-        0: 'root (pelvis)',
-        1: 'right_hip',
-        2: 'right_knee',
-        3: 'right_foot',
-        4: 'left_hip',
-        5: 'left_knee',
-        6: 'left_foot',
-        7: 'spine',
-        8: 'thorax',
-        9: 'neck_base',
-        10: 'head',
-        11: 'left_shoulder',
-        12: 'left_elbow',
-        13: 'left_wrist',
-        14: 'right_shoulder',
-        15: 'right_elbow',
-        16: 'right_wrist'
-
+class UnrealPose3dDataset(BaseStereoViewDataset):
+    """
     Args:
         ann_file (str): Annotation file path. Default: ''.
         seq_len (int): Number of frames in a sequence. Default: 1.
@@ -150,6 +124,7 @@ class UnrealPose3dDataset(BaseMocapDataset):
         """Load annotation file."""
         with get_local_path(ann_file) as local_path:
             self.ann_data = COCO(local_path)
+        # pass
 
 
     def get_sequence_indices(self) -> List[List[int]]:
@@ -172,12 +147,14 @@ class UnrealPose3dDataset(BaseMocapDataset):
             raise NotImplementedError('Multi-frame data sample unsupported!')
 
         return sequence_indices
-
+    
+    
     def _load_annotations(self) -> Tuple[List[dict], List[dict]]:
         num_keypoints = 21
         self._metainfo['CLASSES'] = self.ann_data.loadCats(
             self.ann_data.getCatIds())
-
+        if self.data_mode == 'bottomup':
+            pass
         instance_list = []
         image_list = []
         for i, _ann_ids in enumerate(self.sequence_indices):
@@ -185,21 +162,30 @@ class UnrealPose3dDataset(BaseMocapDataset):
             num_anns = len(anns)
             img_ids = []
             kpts = np.zeros((num_anns, num_keypoints, 2), dtype=np.float32)
+            right_kpts = np.zeros((num_anns, num_keypoints, 2), dtype=np.float32)
             kpts_3d = np.zeros((num_anns, num_keypoints, 3), dtype=np.float32)
             keypoints_visible = np.zeros((num_anns, num_keypoints),
+                                            dtype=np.float32)
+            right_keypoints_visible = np.zeros((num_anns, num_keypoints),
                                             dtype=np.float32)
             scales = np.zeros((num_anns, 2), dtype=np.float32)
             centers = np.zeros((num_anns, 2), dtype=np.float32)
             bboxes = np.zeros((num_anns, 4), dtype=np.float32)
-            bbox_scores = np.zeros((num_anns, ), dtype=np.float32)
+            bbox_scores = np.zeros((num_anns, 1), dtype=np.float32)
             bbox_scales = np.zeros((num_anns, 2), dtype=np.float32)
+            right_bboxes = np.zeros((num_anns, 4), dtype=np.float32)
+            right_bbox_scores = np.zeros((num_anns, 1), dtype=np.float32)
+            right_bbox_scales = np.zeros((num_anns, 2), dtype=np.float32)
 
             for j, ann in enumerate(anns):
                 img_ids.append(ann['image_id'])
                 kpts[j] = np.array(ann['keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
-                kpts_3d[j] = np.array(ann['keypoints_3d'], dtype=np.float32).reshape(-1,3)
+                right_kpts[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
+                kpts_3d[j] = np.array(ann['keypoints_3d'], dtype=np.float32).reshape(-1,4)[:, :3]
                 keypoints_visible[j] = np.array(
-                    ann['keypoints_visible'], dtype=np.float32).reshape((-1,))
+                    ann['keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
+                right_keypoints_visible[j] = np.array(
+                    ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
                 if 'scale' in ann:
                     scales[j] = np.array(ann['scale'])
                 if 'center' in ann:
@@ -207,11 +193,15 @@ class UnrealPose3dDataset(BaseMocapDataset):
                 bboxes[j] = np.array(ann['bbox'], dtype=np.float32)
                 bbox_scores[j] = np.array([1], dtype=np.float32)
                 bbox_scales[j] = np.array([1, 1], dtype=np.float32)
+                
+                right_bboxes[j] = np.array(ann['right_bbox'], dtype=np.float32)
+                right_bbox_scores[j] = np.array([1], dtype=np.float32)
+                right_bbox_scales[j] = np.array([1, 1], dtype=np.float32)
 
             imgs = self.ann_data.loadImgs(img_ids)
 
             img_paths = np.array([
-                f'{self.data_prefix["img"]}/' + img['file_name'] for img in imgs
+                [f'{self.data_prefix["img"]}/' + img['left_file_name'],f'{self.data_prefix["img"]}/' + img['right_file_name'] ]for img in imgs
             ])
             factors = np.zeros((kpts_3d.shape[0], ), dtype=np.float32)
 
@@ -220,9 +210,7 @@ class UnrealPose3dDataset(BaseMocapDataset):
                 target_idx = list(range(self.multiple_target))
 
             cam_param = anns[-1]['camera_param']
-            # if 'w' not in cam_param or 'h' not in cam_param:
-            #     cam_param['w'] = 1000
-            #     cam_param['h'] = 1000
+   
             cam_param['w'] = 640
             cam_param['h'] = 480
             cam_param = {'f': [cam_param['K'][0][0],cam_param['K'][1][1]], 'c': [cam_param['K'][0][2],cam_param['K'][1][2]]}
@@ -248,7 +236,12 @@ class UnrealPose3dDataset(BaseMocapDataset):
                 'target_idx': target_idx,
                 'bbox': bboxes,
                 'bbox_scales': bbox_scales,
-                'bbox_scores': bbox_scores
+                'bbox_scores': bbox_scores,
+                'right_keypoints': right_kpts,
+                'right_keypoints_visible': right_keypoints_visible,
+                'right_bbox': right_bboxes,
+                'right_bbox_scales': right_bbox_scales,
+                'right_bbox_scores': right_bbox_scores,
             }
 
             instance_list.append(instance_info)

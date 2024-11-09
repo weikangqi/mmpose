@@ -18,7 +18,7 @@ from mmpose.structures import PoseDataSample
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
-    parser.add_argument('--config', default='projects/rtmpose3d/configs/rtmw3d-l_8xb64_cocktail14-384x288_uepose.py', help='train config file path')
+    parser.add_argument('--config', default='/workspace/mmpose3d/projects/uepose3d/configs/uepose_l.py', help='train config file path')
     parser.add_argument(
         '--output-dir',
         default='data/uecoco3d_tmp',
@@ -32,7 +32,7 @@ def parse_args():
         help='Define the maximum item processed per dataset')
     parser.add_argument(
         '--phase',
-        default='test',
+        default='train',
         type=str,
         choices=['train', 'test', 'val'],
         help='phase of dataset to visualize, accept "train" "test" and "val".'
@@ -44,7 +44,7 @@ def parse_args():
         help='the interval of show (s)')
     parser.add_argument(
         '--mode',
-        default='original',
+        default='transformed',
         type=str,
         choices=['original', 'transformed'],
         help='display mode; display original pictures or transformed '
