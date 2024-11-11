@@ -109,7 +109,7 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
         if 'right_img' in results:
             results['right_img'] = self._transform(results['right_img'], warp_mat,
                                             (int(w), int(h)))
-    
+
         if 'keypoints' in results:
             # Only transform (x, y) coordinates
             kpts = cv2.transform(results['keypoints'], warp_mat)
@@ -135,6 +135,9 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
                     'right_keypoints_visible'] = keypoint_clip_border(
                         results['right_keypoints'], results['right_keypoints_visible'],
                         (w, h))
+        else:
+            results['right_keypoints'] =  results['keypoints']
+            results['right_keypoints_visible'] = results['keypoints_visible']
 
 
         if 'bbox' in results:
@@ -158,6 +161,8 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
             if self.clip_border:
                 bbox = bbox_clip_border(bbox, (w, h))
             results['right_bbox'] = bbox
+        else:
+            results['right_bbox'] = results['bbox']
 
         if 'area' in results:
             warp_mat_for_area = warp_mat
@@ -168,5 +173,6 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
 
         results['input_size'] = self.input_size
         results['warp_mat'] = warp_mat
+        
 
         return results

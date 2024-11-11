@@ -33,14 +33,7 @@ class StereoGenerateTarget(GenerateTarget):
 
         See ``transform()`` method of :class:`BaseTransform` for details.
         """
-        # if results.get('right_keypoints', None) is not None:
-        #     # use original keypoints
-        #     right_keypoints = results['right_keypoints']
-        # else:
-        #     right_keypoints = None
-        #     raise ValueError(
-        #         'GenerateTarget requires \'transformed_keypoints\' or'
-        #         ' \'keypoints\' in the results.')
+
 
         right_keypoints_visible = results['right_keypoints_visible']
         if right_keypoints_visible.ndim == 3 and right_keypoints_visible.shape[2] == 2:

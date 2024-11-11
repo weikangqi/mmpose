@@ -49,14 +49,47 @@ data_mode = 'bottomup'
 data_root = '/workspace/MobileHumanPose3D/datasets'
 
 # train datasets
+# dataset_coco = dict(
+#     type='UnrealPose3dDataset',
+#     data_root=data_root,
+#     data_mode=data_mode,
+#     ann_file='uecoco_3d/annotations/test_stereo.json',
+#     data_prefix=dict(img='uecoco_3d/test_stereo'),
+#     pipeline=train_pipeline,
+# )
+
+# dataset_coco = dict(
+#     type='UnrealPose3dDataset',
+#     data_root=data_root,
+#     data_mode=data_mode,
+#     ann_file='uecoco_3d/annotations/test_stereo.json',
+#     data_prefix=dict(img='uecoco_3d/test_stereo'),
+#     pipeline=train_pipeline,
+# )
+
 dataset_coco = dict(
-    type='UnrealPose3dDataset',
-    data_root=data_root,
+    type='CocoDataset',
+    data_root='data/',
     data_mode=data_mode,
-    ann_file='uecoco_3d/annotations/test_stereo.json',
-    data_prefix=dict(img='uecoco_3d/test_stereo'),
-    pipeline=train_pipeline,
+    ann_file='coco/annotations/small_person_keypoints_train2017.json',
+    data_prefix=dict(img='coco/train2017'),
+    pipeline=[
+        dict(
+            type='KeypointConverter',
+            num_keypoints=21,
+            mapping=[(i,i) for i in range(17)])
+    ],
 )
+
+
+train_dataset = dict(
+    type='CombinedDataset',
+    datasets=[dataset_coco],
+    pipeline=train_pipeline,
+    metainfo=dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/uepose.py'),
+    test_mode=False)
+
+
 
 train_dataloader = dict(
     batch_size=16,
@@ -64,7 +97,7 @@ train_dataloader = dict(
     persistent_workers=True,
     pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
-    dataset=dataset_coco)
+    dataset=train_dataset)
 
 val_pipeline = [
     dict(type='LoadStereoImage'),

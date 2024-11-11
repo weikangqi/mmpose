@@ -43,6 +43,9 @@ class StereoPackPoseInputs(PackPoseInputs):
         if 'img' in results:
             img = results['img']
             inputs_tensor = image_to_tensor(img)
+        if  'right_img' in results:
+            right_img = results['right_img']
+            inputs_tensor = torch.cat([inputs_tensor,image_to_tensor(right_img)],dim=-1)
         # Pack keypoints for 3d pose-lifting
         elif 'lifting_target' in results and 'keypoints' in results:
             if 'keypoint_labels' in results:
