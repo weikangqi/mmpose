@@ -3,6 +3,7 @@ from .pose_estimator import StereoBottomupPoseEstimator
 from .datasets import LoadStereoImage,StereoBottomupRandomAffine,StereoYOLOXHSVRandomAug,StereoRandomFlip,StereoPackPoseInputs,StereoGenerateTarget
 from .datasets import UnrealPose3dDataset
 from .simcc_3d_label import StereoSimCC3DLabel
+from .visualizer_3d import StereoPose3dLocalVisualizerPlus
 
 
 __all__ = [
@@ -11,6 +12,6 @@ __all__ = [
     'LoadStereoImage','StereoBottomupRandomAffine',
     'StereoYOLOXHSVRandomAug','StereoRandomFlip',
     'StereoPackPoseInputs','StereoGenerateTarget',
-    'UnrealPose3dDataset'
+    'UnrealPose3dDataset','StereoPose3dLocalVisualizerPlus'
 ]
 

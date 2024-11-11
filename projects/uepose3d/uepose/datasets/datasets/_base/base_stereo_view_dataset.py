@@ -336,7 +336,7 @@ class BaseStereoViewDataset(BaseDataset):
             data_infos = list(data_infos)
 
             # image data
-            img_paths = data_infos[0]['img_paths']
+            img_paths = data_infos[0]['img_path']
             data_info_bu = {
                 'img_ids': img_ids,
                 'img_paths': img_paths,

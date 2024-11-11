@@ -33,7 +33,22 @@ class StereoGenerateTarget(GenerateTarget):
 
         See ``transform()`` method of :class:`BaseTransform` for details.
         """
+        # if results.get('right_keypoints', None) is not None:
+        #     # use original keypoints
+        #     right_keypoints = results['right_keypoints']
+        # else:
+        #     right_keypoints = None
+        #     raise ValueError(
+        #         'GenerateTarget requires \'transformed_keypoints\' or'
+        #         ' \'keypoints\' in the results.')
 
+        right_keypoints_visible = results['right_keypoints_visible']
+        if right_keypoints_visible.ndim == 3 and right_keypoints_visible.shape[2] == 2:
+            right_keypoints_visible, right_keypoints_visible_weights = \
+                right_keypoints_visible[..., 0], right_keypoints_visible[..., 1]
+            results['right_keypoints_visible'] = right_keypoints_visible
+            results['right_keypoints_visible_weights'] = right_keypoints_visible_weights
+        
         if results.get('transformed_keypoints', None) is not None:
             # use keypoints transformed by TopdownAffine
             keypoints = results['transformed_keypoints']
@@ -51,6 +66,9 @@ class StereoGenerateTarget(GenerateTarget):
                 keypoints_visible[..., 0], keypoints_visible[..., 1]
             results['keypoints_visible'] = keypoints_visible
             results['keypoints_visible_weights'] = keypoints_visible_weights
+            
+            
+        
 
         # Encoded items from the encoder(s) will be updated into the results.
         # Please refer to the document of the specific codec for details about
@@ -189,12 +207,12 @@ class StereoRandomFlip(RandomFlip):
 
             h, w = results.get('input_size', results['img_shape'])
             # flip image and mask
-            if isinstance(results['left_img'], list):
-                results['left_img'] = [
-                    imflip(img, direction=flip_dir) for img in results['left_img']
+            if isinstance(results['img'], list):
+                results['img'] = [
+                    imflip(img, direction=flip_dir) for img in results['img']
                 ]
             else:
-                results['left_img'] = imflip(results['left_img'], direction=flip_dir)
+                results['img'] = imflip(results['img'], direction=flip_dir)
             if isinstance(results['right_img'], list):
                 results['right_img'] = [
                     imflip(img, direction=flip_dir) for img in results['right_img']
@@ -270,6 +288,7 @@ class StereoYOLOXHSVRandomAug(YOLOXHSVRandomAug):
             cv2.cvtColor(img_hsv.astype(img.dtype), cv2.COLOR_HSV2BGR, dst=img)
             return img
 
-        results['left_img'] = _transform(results['left_img'])
-        results['right_img'] = _transform(results['right_img'])
+        results['img'] = _transform(results['img'])
+        if 'right_img' in results:
+            results['right_img'] = _transform(results['right_img'])
         return results

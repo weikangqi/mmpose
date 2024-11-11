@@ -103,10 +103,12 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
                 shear=shear)
             
         # warp image and keypoints
-        results['left_img'] = self._transform(results['left_img'], warp_mat,
+        results['img'] = self._transform(results['img'], warp_mat,
                                          (int(w), int(h)))
-        results['right_img'] = self._transform(results['right_img'], warp_mat,
-                                         (int(w), int(h)))
+        
+        if 'right_img' in results:
+            results['right_img'] = self._transform(results['right_img'], warp_mat,
+                                            (int(w), int(h)))
     
         if 'keypoints' in results:
             # Only transform (x, y) coordinates

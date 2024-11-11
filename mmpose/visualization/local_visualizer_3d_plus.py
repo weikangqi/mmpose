@@ -157,7 +157,7 @@ class Pose3dLocalVisualizerPlus(PoseLocalVisualizer):
                                     fig_idx,
                                     show_kpt_idx,
                                     title=None):
-
+            
             for idx, (kpts, score, score_2d) in enumerate(
                     zip(keypoints, scores, scores_2d)):
 
@@ -166,7 +166,7 @@ class Pose3dLocalVisualizerPlus(PoseLocalVisualizer):
 
                 kpts_valid = kpts[valid]
                 ax = fig.add_subplot(
-                    1, num_fig, fig_idx * (idx + 1), projection='3d')
+                    1, num_fig, fig_idx * (idx+1), projection='3d')
                 ax.view_init(elev=axis_elev, azim=axis_azimuth)
                 ax.set_aspect('auto')
                 ax.set_xticks([])
@@ -301,7 +301,7 @@ class Pose3dLocalVisualizerPlus(PoseLocalVisualizer):
             width, height = fig.get_size_inches() * fig.get_dpi()
             pred_img_data = pred_img_data.reshape(
                 int(height),
-                int(width) * num_instances, 3)
+                -1, 3)
 
         plt.close(fig)
 

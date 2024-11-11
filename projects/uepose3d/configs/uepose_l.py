@@ -1,5 +1,10 @@
 _base_ = ['../../../configs/_base_/default_runtime.py']
 custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
+vis_backends = [
+    dict(type='LocalVisBackend'),
+]
+visualizer = dict(
+    type='StereoPose3dLocalVisualizerPlus', vis_backends=vis_backends, name='visualizer')
 
 # runtime
 train_cfg = dict(max_epochs=600, val_interval=20, dynamic_intervals=[(580, 1)])
@@ -8,21 +13,21 @@ train_cfg = dict(max_epochs=600, val_interval=20, dynamic_intervals=[(580, 1)])
 # data
 input_size = (640, 640)
 metafile = 'configs/_base_/datasets/uepose.py'
-codec = dict(type='YOLOXPoseAnnotationProcessor', input_size=input_size)
-# codec = dict(
-#     type='StereoSimCC3DLabel',
-#     input_size=(288, 384, 288),
-#     sigma=(6., 6.93, 6.),
-#     simcc_split_ratio=2.0,
-#     normalize=False,
-#     use_dark=False,
-#     root_index=(11, 12))
+# codec = dict(type='YOLOXPoseAnnotationProcessor', input_size=input_size)
+codec = dict(
+    type='StereoSimCC3DLabel',
+    input_size=(640, 640, 640),
+    sigma=(6., 6.93, 6.),
+    simcc_split_ratio=2.0,
+    normalize=False,
+    use_dark=False,
+    root_index=(11, 12))
 
 train_pipeline = [
     dict(type='LoadStereoImage'),
     dict(
         type='StereoBottomupRandomAffine',
-        input_size=(640, 640),
+        input_size=input_size,
         scale_type='long',
         pad_val=(114, 114, 114),
         bbox_keep_corner=False,
@@ -30,10 +35,14 @@ train_pipeline = [
     ),
     dict(type='StereoYOLOXHSVRandomAug'),
     dict(type='StereoRandomFlip',direction='horizontal'),
-    # dict(type='BottomupGetHeatmapMask', get_invalid=True),
-    # dict(type='FilterAnnotations', by_kpt=True, by_box=True, keep_empty=False),
     dict(type='StereoGenerateTarget', encoder=codec),
-    dict(type='StereoPackPoseInputs'),
+    dict(type='StereoPackPoseInputs', 
+         meta_keys=('id',
+                    'img_paths',
+                    'keypoints',
+                    'keypoints_visible',
+                    'right_keypoints',
+                    'right_keypoints_visible')),
 ]
 
 data_mode = 'bottomup'

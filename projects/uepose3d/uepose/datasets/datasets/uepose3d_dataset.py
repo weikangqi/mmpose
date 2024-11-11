@@ -153,8 +153,6 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
         num_keypoints = 21
         self._metainfo['CLASSES'] = self.ann_data.loadCats(
             self.ann_data.getCatIds())
-        if self.data_mode == 'bottomup':
-            pass
         instance_list = []
         image_list = []
         for i, _ann_ids in enumerate(self.sequence_indices):
@@ -180,12 +178,17 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
             for j, ann in enumerate(anns):
                 img_ids.append(ann['image_id'])
                 kpts[j] = np.array(ann['keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
-                right_kpts[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
+                
+                
                 kpts_3d[j] = np.array(ann['keypoints_3d'], dtype=np.float32).reshape(-1,4)[:, :3]
                 keypoints_visible[j] = np.array(
                     ann['keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
-                right_keypoints_visible[j] = np.array(
-                    ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
+                
+                
+                if 'right_keypoints' in ann:
+                    right_kpts[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
+                    right_keypoints_visible[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
+                    
                 if 'scale' in ann:
                     scales[j] = np.array(ann['scale'])
                 if 'center' in ann:
@@ -194,15 +197,18 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 bbox_scores[j] = np.array([1], dtype=np.float32)
                 bbox_scales[j] = np.array([1, 1], dtype=np.float32)
                 
-                right_bboxes[j] = np.array(ann['right_bbox'], dtype=np.float32)
-                right_bbox_scores[j] = np.array([1], dtype=np.float32)
-                right_bbox_scales[j] = np.array([1, 1], dtype=np.float32)
+                if 'right_bbox' in ann:
+                    right_bboxes[j] = np.array(ann['right_bbox'], dtype=np.float32)
+                    right_bbox_scores[j] = np.array([1], dtype=np.float32)
+                    right_bbox_scales[j] = np.array([1, 1], dtype=np.float32)
 
             imgs = self.ann_data.loadImgs(img_ids)
 
-            img_paths = np.array([
-                [f'{self.data_prefix["img"]}/' + img['left_file_name'],f'{self.data_prefix["img"]}/' + img['right_file_name'] ]for img in imgs
-            ])
+            img_paths = np.array(
+                 [
+                [f'{self.data_prefix["img"]}/' + img['file_name'],f'{self.data_prefix["img"]}/' + img['right_file_name'] ] for img in imgs
+            ]
+            )
             factors = np.zeros((kpts_3d.shape[0], ), dtype=np.float32)
 
             target_idx = [-1] if self.causal else [int(self.seq_len // 2)]
@@ -225,8 +231,7 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 'id': i,
                 'category_id': 1,
                 'iscrowd': 0,
-                'img_paths': list(img_paths),
-                'img_path': img_paths[-1],
+                'img_path': img_paths,
                 'img_ids': [img['id'] for img in imgs],
                 'lifting_target': kpts_3d[target_idx],
                 'lifting_target_visible': keypoints_visible[target_idx],

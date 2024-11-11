@@ -171,8 +171,17 @@ def main():
         else:
             img = item['inputs'].permute(1, 2, 0).numpy()
             data3d_sample = item['data_samples']
-            img_path = data3d_sample.img_path
+            img_paths = data3d_sample.metainfo.get('img_paths', None)
+            left_img_path = img_paths[0][0]
+            right_img_path = img_paths[0][1]
+            img_path = left_img_path
             dataset_name = data3d_sample.metainfo.get('dataset_name', None)
+            
+            data2d_sample = PoseDataSample()
+            gt2d_instances = InstanceData()
+            gt2d_instances.keypoints = data3d_sample.metainfo.get('keypoints', None)
+            gt2d_instances.keypoints_visible = data3d_sample.metainfo.get('keypoints_visible', None)
+            data2d_sample.pred_instances = gt2d_instances
 
         # save image with annotation
         output_dir = osp.join(
@@ -189,14 +198,14 @@ def main():
             img,
             data_sample=data3d_sample,
             det_data_sample = data2d_sample,
-            draw_gt=False,
+            draw_gt=True,
             draw_2d=True,
-            draw_bbox=True,
+            draw_bbox=False,
             convert_keypoint=False,
             axis_limit=1,
             axis_azimuth=70,
             axis_elev=15,
-            num_instances=1,
+            num_instances=4,
             wait_time=args.show_interval,
             out_file=out_file)
         progress_bar.update()

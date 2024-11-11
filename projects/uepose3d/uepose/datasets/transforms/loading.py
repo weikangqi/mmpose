@@ -70,11 +70,11 @@ class LoadStereoImage(LoadImageFromFile):
             if self.to_float32:
                 img = img.astype(np.float32)
             return img
-
+        
         # filename = results['img_path']
-        left_img = load_image( results['img_paths'][0][0])
-        right_img = load_image( results['img_paths'][0][1])
-        results['left_img'] = left_img
+        left_img = load_image(results['img_paths'][0][0])
+        right_img = load_image(results['img_paths'][0][1])
+        results['img'] = left_img
         results['right_img'] = right_img
         
         
@@ -95,7 +95,7 @@ class LoadStereoImage(LoadImageFromFile):
                 # Load image from file by :meth:`LoadImageFromFile.transform`
                 results = self.load_stereo_imgs(results)
             else:
-                img = results['left_img']
+                img = results['img']
                 assert isinstance(img, np.ndarray)
                 if self.to_float32:
                     img = img.astype(np.float32)
