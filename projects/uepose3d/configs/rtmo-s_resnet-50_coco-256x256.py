@@ -1,14 +1,12 @@
 _base_ = ['../../../configs/_base_/default_runtime.py']
 custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
-
 # runtime
-train_cfg = dict(max_epochs=1000, val_interval=1, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=300, val_interval=10, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=10, max_keep_ckpts=3))
-
+    checkpoint=dict(type='CheckpointHook', interval=20, max_keep_ckpts=3))
 
 optim_wrapper = dict(
     type='OptimWrapper',
@@ -21,7 +19,6 @@ optim_wrapper = dict(
         force_default_settings=True,
         custom_keys=dict({'neck.encoder': dict(lr_mult=0.05)})),
     clip_grad=dict(max_norm=0.1, norm_type=2))
-
 
 param_scheduler = [
     dict(
@@ -51,150 +48,215 @@ param_scheduler = [
     dict(type='ConstantLR', by_epoch=True, factor=1, begin=580, end=600),
 ]
 
-
-# vis_backends = [
-#     dict(type='LocalVisBackend'),
-# ]
-# visualizer = dict(
-#     type='StereoPose3dLocalVisualizerPlus', vis_backends=vis_backends, name='visualizer')
-
 # data
 input_size = (256, 256)
-metafile = 'configs/_base_/datasets/uepose.py'
-codec = dict(type='StereoYOLOXPoseAnnotationProcessor', input_size=input_size)
-# codec = dict(
-#     type='StereoSimCC3DLabel',
-#     input_size=(640, 640, 640),
-#     sigma=(6., 6.93, 6.),
-#     simcc_split_ratio=2.0,
-#     normalize=False,
-#     use_dark=False,
-#     root_index=(11, 12))
+metafile = '/workspace/mmpose3d/configs/_base_/datasets/uepose.py'
+codec = dict(type='YOLOXPoseAnnotationProcessor', input_size=input_size)
 
-train_pipeline = [
-    dict(type='LoadStereoImage'),
+train_pipeline_stage1 = [
+    dict(type='LoadImage', backend_args=None),
     dict(
-        type='StereoBottomupRandomAffine',
+        type='Mosaic',
+        img_scale=input_size,
+        pad_val=114.0,
+        pre_transform=[dict(type='LoadImage', backend_args=None)]),
+    dict(
+        type='BottomupRandomAffine',
+        input_size=input_size,
+        shift_factor=0.1,
+        rotate_factor=10,
+        scale_factor=(0.75, 1.0),
+        pad_val=114,
+        distribution='uniform',
+        transform_mode='perspective',
+        bbox_keep_corner=False,
+        clip_border=True,
+    ),
+    dict(
+        type='YOLOXMixUp',
+        img_scale=input_size,
+        ratio_range=(0.8, 1.6),
+        pad_val=114.0,
+        pre_transform=[dict(type='LoadImage', backend_args=None)]),
+    dict(type='YOLOXHSVRandomAug'),
+    dict(type='RandomFlip'),
+    dict(type='FilterAnnotations', by_kpt=True, by_box=True, keep_empty=False),
+    dict(type='GenerateTarget', encoder=codec),
+    dict(type='PackPoseInputs'),
+]
+train_pipeline_stage2 = [
+    dict(type='LoadImage'),
+    dict(
+        type='BottomupRandomAffine',
         input_size=input_size,
         scale_type='long',
         pad_val=(114, 114, 114),
         bbox_keep_corner=False,
         clip_border=True,
     ),
-    dict(type='StereoYOLOXHSVRandomAug'),
-    dict(type='StereoRandomFlip',direction='horizontal'),
-    dict(type='StereoFilterAnnotations', by_kpt=True, by_box=True, keep_empty=False),
-    dict(type='StereoGenerateTarget', encoder=codec),
-    dict(type='StereoPackPoseInputs', 
-         meta_keys=('id',
-                    'img_paths',
-                    'keypoints',
-                    'keypoints_visible',
-                    'right_keypoints',
-                    'right_keypoints_visible')),
+    dict(type='YOLOXHSVRandomAug'),
+    dict(type='RandomFlip'),
+    dict(type='BottomupGetHeatmapMask', get_invalid=True),
+    dict(type='FilterAnnotations', by_kpt=True, by_box=True, keep_empty=False),
+    dict(type='GenerateTarget', encoder=codec),
+    dict(type='PackPoseInputs'),
 ]
 
 data_mode = 'bottomup'
-data_root = '/workspace/MobileHumanPose3D/datasets'
+data_root = 'data/'
+
+# small_prefix='small_'
+small_prefix=''
 
 # train datasets
-dataset_usepose = dict(
-    type='UnrealPose3dDataset',
+coco_train_dataset = dict(
+    type='CocoDataset',
     data_root=data_root,
     data_mode=data_mode,
-    ann_file='uecoco_3d/annotations/test_stereo.json',
-    data_prefix=dict(img='uecoco_3d/test_stereo'),
+    ann_file=f'coco/annotations/{small_prefix}person_keypoints_train2017.json',
+    data_prefix=dict(img='coco/train2017/'),
+    # pipeline=train_pipeline_stage1,
     pipeline=[
         dict(
             type='KeypointConverter',
             num_keypoints=21,
-            mapping=[(i,i) for i in range(21)])
-    ]
+            mapping=[(i, i) for i in range(17)])
+    ],
 )
 
-
-
-dataset_coco_train = dict(
+coco_val_dataset = dict(
     type='CocoDataset',
-    data_root='data/',
+    data_root=data_root,
     data_mode=data_mode,
-    ann_file='coco/annotations/small_person_keypoints_train2017.json',
-    data_prefix=dict(img='coco/train2017'),
+    ann_file=f'coco/annotations/{small_prefix}person_keypoints_val2017.json',
+    data_prefix=dict(img='coco/val2017/'),
     pipeline=[
         dict(
-            type='KeypointConverter',
-            num_keypoints=21,
-            mapping=[(i,i) for i in range(17)])
+        type='KeypointConverter',
+        num_keypoints=21,
+        mapping=[(i, i) for i in range(17)])
     ],
 )
 
 
+mpii_uepose = [
+    (0, 16),
+    (1, 14),
+    (2, 12),
+    (3, 11),
+    (4, 13),
+    (5, 15),
+    (6, 20),
+    (9, 19),
+    (10, 10),
+    (11, 8),
+    (12, 6),
+    (13, 5),
+    (14, 7),
+    (15, 9),
+    
+]
+
+mpii_dataset = dict(
+    type='MpiiDataset',
+    data_root=data_root,
+    data_mode=data_mode,
+    ann_file='mpii/annotations/mpii_train.json',
+    data_prefix=dict(img='mpii/images/'),
+    pipeline=[
+        dict(type='KeypointConverter', num_keypoints=21, mapping=mpii_uepose)
+    ],
+)
+
+
+# ochuman_dataset = dict(
+#     type='CocoDataset',
+#     data_root=data_root,
+#     data_mode=data_mode,
+#     ann_file='ochuman/annotations/mpii_train.json',
+#     data_prefix=dict(img='ochuman/images/'),
+#     pipeline=[
+#         dict(type='KeypointConverter', num_keypoints=21, mapping=mpii_uepose)
+#     ],
+# )
+
+
+
+
+uepose_val_dataset = dict(
+    type='UnrealPoseDataset',
+    data_root=data_root,
+    data_mode=data_mode,
+    ann_file='uecoco/annotations/test.json',
+    data_prefix=dict(img='uecoco/test/'),
+    pipeline = []
+)
+
+
+
 train_dataset = dict(
     type='CombinedDataset',
-    datasets=[dataset_coco_train],
-    pipeline=train_pipeline,
-    metainfo=dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/uepose.py'),
-    test_mode=False)
+    metainfo=dict(from_file=metafile),
+    datasets=[
+        coco_train_dataset,
+        mpii_dataset,
+    ],
+    sample_ratio_factor=[1,1],
+    test_mode=False,
+    pipeline=train_pipeline_stage1)
 
 
 
 train_dataloader = dict(
-    batch_size=16,
+    batch_size=32,
     num_workers=8,
     persistent_workers=True,
     pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=train_dataset)
 
-
-
-
 val_pipeline = [
-    dict(type='LoadStereoImage'),
+    dict(type='LoadImage'),
     dict(
-        type='StereoBottomupResize', input_size=input_size, pad_val=(114, 114, 114)),
-    dict(type='StereoPackPoseInputs', 
-         meta_keys=('id', 'img_id', 'img_path', 'ori_shape', 'img_shape',
+        type='BottomupResize', input_size=input_size, pad_val=(114, 114, 114)),
+    dict(
+        type='PackPoseInputs',
+        meta_keys=('id', 'img_id', 'img_path', 'ori_shape', 'img_shape',
                    'input_size', 'input_center', 'input_scale'))
 ]
 
-
-dataset_coco_val = dict(
-    type='CocoDataset',
-    data_root='data/',
-    data_mode=data_mode,
-    ann_file='coco/annotations/small_person_keypoints_val2017.json',
-    data_prefix=dict(img='coco/val2017'),
-    pipeline=[
-        dict(
-            type='KeypointConverter',
-            num_keypoints=21,
-            mapping=[(i,i) for i in range(17)])
-    ],
-)
-
-
-val_dataset = dict(
-    type='CombinedDataset',
-    datasets=[dataset_coco_val],
-    pipeline=val_pipeline,
-    metainfo=dict(from_file='/workspace/mmpose3d/configs/_base_/datasets/uepose.py'),
-    test_mode=False)
-
 val_dataloader = dict(
-    batch_size=12,
+    batch_size=8,
     num_workers=2,
     persistent_workers=True,
     pin_memory=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
-    dataset= val_dataset
-)
+    dataset = dict(
+        type='CombinedDataset',
+        metainfo=dict(from_file=metafile),
+        datasets=[
+            coco_val_dataset,
+        ],
+        sample_ratio_factor=[1],
+        test_mode=True,
+        pipeline=val_pipeline)
+    )
+   
 test_dataloader = val_dataloader
+
+# evaluators
+
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file='/workspace/MobileHumanPose3D/dataset/uecoco/annotations/test.json',
+#     score_mode='bbox',
+#     nms_mode='none'
+# )
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=f'/workspace/mmpose3d/data/coco/annotations/small_person_keypoints_val2017.json',
+    ann_file=f'/workspace/mmpose3d/data/coco/annotations/{small_prefix}person_keypoints_val2017.json',
     score_mode='bbox',
     nms_mode='none',
     gt_converter= dict(
@@ -206,12 +268,41 @@ val_evaluator = dict(
 
 test_evaluator = val_evaluator
 
+# hooks
+custom_hooks = [
+    dict(
+        type='YOLOXPoseModeSwitchHook',
+        num_last_epochs=20,
+        new_train_pipeline=train_pipeline_stage2,
+        priority=48),
+    dict(
+        type='RTMOModeSwitchHook',
+        epoch_attributes={
+            280: {
+                'proxy_target_cc': True,
+                'overlaps_power': 1.0,
+                'loss_cls.loss_weight': 2.0,
+                'loss_mle.loss_weight': 5.0,
+                'loss_oks.loss_weight': 10.0
+            },
+        },
+        priority=48),
+    dict(type='SyncNormHook', priority=48),
+    dict(
+        type='EMAHook',
+        ema_type='ExpMomentumEMA',
+        momentum=0.0002,
+        update_buffers=True,
+        strict_load=False,
+        priority=49),
+]
+
 # model
 widen_factor = 0.5
 deepen_factor = 0.33
 
 model = dict(
-    type='StereoBottomupPoseEstimator',
+    type='BottomupPoseEstimator',
     init_cfg=dict(
         type='Kaiming',
         layer='Conv2d',
@@ -220,34 +311,35 @@ model = dict(
         mode='fan_in',
         nonlinearity='leaky_relu'),
     data_preprocessor=dict(
-        type='StereoPoseDataPreprocessor',
+        type='PoseDataPreprocessor',
         pad_size_divisor=32,
         mean=[0, 0, 0],
         std=[1, 1, 1],
         batch_augments=[
+            dict(
+                type='BatchSyncRandomResize',
+                random_size_range=(480, 800),
+                size_divisor=32,
+                interval=1),
         ]),
     backbone=dict(
-        type='CSPDarknet',
-        deepen_factor=deepen_factor,
-        widen_factor=widen_factor,
-        out_indices=(2, 3, 4),
-        spp_kernal_sizes=(5, 9, 13),
-        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-        act_cfg=dict(type='Swish'),
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='https://download.openmmlab.com/mmdetection/v2.0/'
-            'yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_'
-            '20211121_095711-4592a793.pth',
-            prefix='backbone.',
-        )),
+        type='ResNet',
+        depth =50,
+        out_indices=(1, 2, 3),
+        # init_cfg=dict(
+        #     type='Pretrained',
+        #     checkpoint='ckpt/new_repvit_m0_9_distill_450e.pth',
+        #     prefix='backbone.',
+        # )
+        
+        ),
     neck=dict(
         type='HybridEncoder',
-        in_channels=[128, 256, 512],
+        in_channels=[512,1024,2048],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,
-        output_indices=[1, 2],
+        output_indices=[1,2],
         encoder_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(
@@ -332,5 +424,3 @@ model = dict(
         score_thr=0.1,
         nms_thr=0.65,
     ))
-
-

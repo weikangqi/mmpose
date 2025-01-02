@@ -2,7 +2,7 @@ _base_ = ['../../../configs/_base_/default_runtime.py']
 custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
 
 # runtime
-train_cfg = dict(max_epochs=1000, val_interval=1, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=1000, val_interval=10, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
@@ -59,7 +59,7 @@ param_scheduler = [
 #     type='StereoPose3dLocalVisualizerPlus', vis_backends=vis_backends, name='visualizer')
 
 # data
-input_size = (256, 256)
+input_size = (640, 640)
 metafile = 'configs/_base_/datasets/uepose.py'
 codec = dict(type='StereoYOLOXPoseAnnotationProcessor', input_size=input_size)
 # codec = dict(
@@ -96,7 +96,7 @@ train_pipeline = [
 
 data_mode = 'bottomup'
 data_root = '/workspace/MobileHumanPose3D/datasets'
-
+samll_preifix = ''
 # train datasets
 dataset_usepose = dict(
     type='UnrealPose3dDataset',
@@ -118,7 +118,7 @@ dataset_coco_train = dict(
     type='CocoDataset',
     data_root='data/',
     data_mode=data_mode,
-    ann_file='coco/annotations/small_person_keypoints_train2017.json',
+    ann_file=f'coco/annotations/{samll_preifix}person_keypoints_train2017.json',
     data_prefix=dict(img='coco/train2017'),
     pipeline=[
         dict(
@@ -163,7 +163,7 @@ dataset_coco_val = dict(
     type='CocoDataset',
     data_root='data/',
     data_mode=data_mode,
-    ann_file='coco/annotations/small_person_keypoints_val2017.json',
+    ann_file=f'coco/annotations/{samll_preifix}person_keypoints_val2017.json',
     data_prefix=dict(img='coco/val2017'),
     pipeline=[
         dict(
@@ -182,7 +182,7 @@ val_dataset = dict(
     test_mode=False)
 
 val_dataloader = dict(
-    batch_size=12,
+    batch_size=8,
     num_workers=2,
     persistent_workers=True,
     pin_memory=True,
@@ -194,7 +194,7 @@ test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=f'/workspace/mmpose3d/data/coco/annotations/small_person_keypoints_val2017.json',
+    ann_file=f'/workspace/mmpose3d/data/coco/annotations/{samll_preifix}person_keypoints_val2017.json',
     score_mode='bbox',
     nms_mode='none',
     gt_converter= dict(
@@ -227,23 +227,72 @@ model = dict(
         batch_augments=[
         ]),
     backbone=dict(
-        type='CSPDarknet',
-        deepen_factor=deepen_factor,
-        widen_factor=widen_factor,
-        out_indices=(2, 3, 4),
-        spp_kernal_sizes=(5, 9, 13),
-        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-        act_cfg=dict(type='Swish'),
+        type='RepViT',
+        cfgs =   [
+            # k, t, c, SE, HS, s 
+            [3,   2,  80, 1, 0, 1],
+            [3,   2,  80, 0, 0, 1],
+            [3,   2,  80, 1, 0, 1],
+            [3,   2,  80, 0, 0, 1],
+            [3,   2,  80, 1, 0, 1],
+            [3,   2,  80, 0, 0, 1],
+            [3,   2,  80, 0, 0, 1],
+            [3,   2,  160, 0, 0, 2],
+            [3,   2,  160, 1, 0, 1],
+            [3,   2,  160, 0, 0, 1],
+            [3,   2,  160, 1, 0, 1],
+            [3,   2,  160, 0, 0, 1],
+            [3,   2,  160, 1, 0, 1],
+            [3,   2,  160, 0, 0, 1],
+            [3,   2,  160, 0, 0, 1],
+            [3,   2,  320, 0, 1, 2],
+            [3,   2,  320, 1, 1, 1],
+            [3,   2,  320, 0, 1, 1],
+            [3,   2,  320, 1, 1, 1],
+            [3,   2,  320, 0, 1, 1],
+            [3,   2,  320, 1, 1, 1],
+            [3,   2,  320, 0, 1, 1],
+            [3,   2,  320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 1, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 320, 0, 1, 1],
+            [3,   2, 640, 0, 1, 2],
+            [3,   2, 640, 1, 1, 1],
+            [3,   2, 640, 0, 1, 1],
+    ] ,
         init_cfg=dict(
             type='Pretrained',
-            checkpoint='https://download.openmmlab.com/mmdetection/v2.0/'
-            'yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_'
-            '20211121_095711-4592a793.pth',
+            checkpoint='/workspace/mmpose3d/ckpt/new_repvit_m2_3_distill_450e.pth',
             prefix='backbone.',
         )),
     neck=dict(
         type='HybridEncoder',
-        in_channels=[128, 256, 512],
+        in_channels=[160, 320, 640],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,

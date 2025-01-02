@@ -1,5 +1,5 @@
 _base_ = ['../../../configs/_base_/default_runtime.py']
-
+custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
 # runtime
 train_cfg = dict(max_epochs=1000, val_interval=10, dynamic_intervals=[(580, 1)])
 
@@ -105,8 +105,8 @@ train_pipeline_stage2 = [
 data_mode = 'bottomup'
 data_root = 'data/'
 
-small_prefix='small_'
-# small_prefix=''
+# small_prefix='small_'
+small_prefix=''
 
 # train datasets
 coco_train_dataset = dict(
@@ -208,8 +208,8 @@ train_dataset = dict(
 
 
 train_dataloader = dict(
-    batch_size=48,
-    num_workers=8,
+    batch_size=24,
+    num_workers=12,
     persistent_workers=True,
     pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -226,8 +226,8 @@ val_pipeline = [
 ]
 
 val_dataloader = dict(
-    batch_size=16,
-    num_workers=4,
+    batch_size=8,
+    num_workers=2,
     persistent_workers=True,
     pin_memory=True,
     drop_last=False,
@@ -323,27 +323,49 @@ model = dict(
                 interval=1),
         ]),
     backbone=dict(
-        type='CSPDarknet',
-        deepen_factor=deepen_factor,
-        widen_factor=widen_factor,
-        out_indices=(2, 3, 4),
-        spp_kernal_sizes=(5, 9, 13),
-        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-        act_cfg=dict(type='Swish'),
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='https://download.openmmlab.com/mmdetection/v2.0/'
-            'yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_'
-            '20211121_095711-4592a793.pth',
-            prefix='backbone.',
-        )),
+        type='RepViT',
+          cfgs = [
+           [3,   2,  48, 1, 0, 1],
+            [3,   2,  48, 0, 0, 1],
+            [3,   2,  48, 0, 0, 1],
+            [3,   2,  96, 0, 0, 2],
+            [3,   2,  96, 1, 0, 1],
+            [3,   2,  96, 0, 0, 1],
+            [3,   2,  96, 0, 0, 1],
+            [3,   2,  192, 0, 1, 2],
+            [3,   2,  192, 1, 1, 1],
+            [3,   2,  192, 0, 1, 1],
+            [3,   2,  192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 1, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 192, 0, 1, 1],
+            [3,   2, 384, 0, 1, 2],
+            [3,   2, 384, 1, 1, 1],
+            [3,   2, 384, 0, 1, 1]
+        ],
+        feat_out_indice = [7,23,26],
+        # init_cfg=dict(
+        #     type='Pretrained',
+        #     checkpoint='ckpt/new_repvit_m0_9_distill_450e.pth',
+        #     prefix='backbone.',
+        # )
+        ),
     neck=dict(
         type='HybridEncoder',
-        in_channels=[128, 256, 512],
+        in_channels=[96,192,384],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,
-        output_indices=[1, 2],
+        output_indices=[1,2],
         encoder_cfg=dict(
             self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
             ffn_cfg=dict(

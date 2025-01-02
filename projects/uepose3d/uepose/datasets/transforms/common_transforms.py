@@ -1,4 +1,4 @@
-from mmpose.datasets.transforms.common_transforms import YOLOXHSVRandomAug,RandomFlip,GenerateTarget
+from mmpose.datasets.transforms.common_transforms import YOLOXHSVRandomAug,RandomFlip,GenerateTarget,FilterAnnotations
 import numpy as np
 import cv2
 from mmpose.registry import TRANSFORMS
@@ -9,6 +9,96 @@ from mmcv.image import imflip
 from mmpose.structures.bbox import bbox_xyxy2cs, flip_bbox
 from mmpose.structures.keypoint import flip_keypoints
 from mmpose.utils.typing import MultiConfig
+
+
+@TRANSFORMS.register_module()
+class StereoFilterAnnotations(FilterAnnotations):
+    
+    def __init__(self,
+                 min_gt_bbox_wh: Tuple[int, int] = (1, 1),
+                 min_gt_area: int = 1,
+                 min_kpt_vis: int = 1,
+                 by_box: bool = False,
+                 by_area: bool = False,
+                 by_kpt: bool = True,
+                 keep_empty: bool = True) -> None:
+        super().__init__(
+            min_gt_bbox_wh,
+            min_gt_area,
+            min_kpt_vis,
+            by_box,
+            by_area,
+            by_kpt,
+            keep_empty
+        )
+        
+    def transform(self, results: dict) -> Union[dict, None]:
+        """Transform function to filter annotations.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Updated result dict.
+        """
+        assert 'keypoints' in results
+        kpts = results['keypoints']
+        if kpts.shape[0] == 0:
+            return results
+
+        tests = []
+        tests_right = []
+        if self.by_box and 'bbox' in results:
+            bbox = results['bbox']
+            tests.append(
+                ((bbox[..., 2] - bbox[..., 0] > self.min_gt_bbox_wh[0]) &
+                 (bbox[..., 3] - bbox[..., 1] > self.min_gt_bbox_wh[1])))
+            
+        if self.by_box and 'right_bbox' in results:
+            bbox = results['right_bbox']
+            tests_right.append(
+                ((bbox[..., 2] - bbox[..., 0] > self.min_gt_bbox_wh[0]) &
+                 (bbox[..., 3] - bbox[..., 1] > self.min_gt_bbox_wh[1])))
+            
+        if self.by_area and 'area' in results:
+            area = results['area']
+            tests.append(area >= self.min_gt_area)
+        if self.by_kpt:
+            kpts_vis = results['keypoints_visible']
+            if kpts_vis.ndim == 3:
+                kpts_vis = kpts_vis[..., 0]
+            tests.append(kpts_vis.sum(axis=1) >= self.min_kpt_vis)
+        if self.by_kpt:
+            kpts_vis = results['right_keypoints_visible']
+            if kpts_vis.ndim == 3:
+                kpts_vis = kpts_vis[..., 0]
+            tests_right.append(kpts_vis.sum(axis=1) >= self.min_kpt_vis)
+
+        keep = tests[0]
+        keep_right = tests_right[0]
+        for t in tests[1:]:
+            keep = keep & t
+        for t in tests_right[1:]:
+            keep_right = keep_right & t
+
+        if not keep.any() or keep_right.any():
+            if self.keep_empty:
+                return None
+
+
+        keys = ('bbox', 'bbox_score', 'category_id', 'keypoints',
+                'keypoints_visible', 'area')
+        for key in keys:
+            if key in results:
+                results[key] = results[key][keep]
+                
+        keys = ('right_bbox', 'right_bbox_score', 'right_keypoints',
+                'right_keypoints_visible',)
+        for key in keys:
+            if key in results:
+                results[key] = results[key][keep_right]     
+
+        return results
 
 
 

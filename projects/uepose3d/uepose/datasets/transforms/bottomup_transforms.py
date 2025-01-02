@@ -2,7 +2,7 @@ from functools import partial
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 from mmcv.transforms import BaseTransform
 from mmpose.registry import TRANSFORMS
-from mmpose.datasets.transforms import BottomupRandomAffine
+from mmpose.datasets.transforms import BottomupRandomAffine,BottomupResize
 from mmpose.structures.bbox import (bbox_clip_border, bbox_corner2xyxy,
                                     bbox_xyxy2corner, get_pers_warp_matrix,
                                     get_udp_warp_matrix, get_warp_matrix)
@@ -10,6 +10,106 @@ from mmpose.structures.keypoint import keypoint_clip_border
 
 import cv2
 import numpy as np
+
+
+@TRANSFORMS.register_module()
+class StereoBottomupResize(BottomupResize):
+    def __init__(self,
+                 input_size: Tuple[int, int],
+                 aug_scales: Optional[List[float]] = None,
+                 size_factor: int = 32,
+                 resize_mode: str = 'fit',
+                 pad_val: tuple = (0, 0, 0),
+                 use_udp: bool = False):
+        super().__init__(
+            input_size,
+            aug_scales,
+            size_factor,
+            resize_mode,
+            pad_val,
+            use_udp
+        )
+
+    def transform(self, results: Dict) -> Optional[dict]:
+        results = self._transform(results,'img')
+        results = self._transform(results,'right_img')
+        return results
+
+    def _transform(self, results: Dict, img_keys: str) -> Optional[dict]:
+        """The transform function of :class:`BottomupResize` to perform
+        photometric distortion on images.
+
+        See ``transform()`` method of :class:`BaseTransform` for details.
+
+
+        Args:
+            results (dict): Result dict from the data pipeline.
+
+        Returns:
+            dict: Result dict with images distorted.
+        """
+
+        img = results[img_keys]
+        img_h, img_w = results['ori_shape']
+        w, h = self.input_size
+
+        input_sizes = [(w, h)]
+        if self.aug_scales:
+            input_sizes += [(int(w * s), int(h * s)) for s in self.aug_scales]
+
+        imgs = []
+        for i, (_w, _h) in enumerate(input_sizes):
+
+            actual_input_size, padded_input_size = self._get_input_size(
+                img_size=(img_w, img_h), input_size=(_w, _h))
+
+            if self.use_udp:
+                center = np.array([(img_w - 1.0) / 2, (img_h - 1.0) / 2],
+                                  dtype=np.float32)
+                scale = np.array([img_w, img_h], dtype=np.float32)
+                warp_mat = get_udp_warp_matrix(
+                    center=center,
+                    scale=scale,
+                    rot=0,
+                    output_size=actual_input_size)
+            else:
+                center = np.array([img_w / 2, img_h / 2], dtype=np.float32)
+                scale = np.array([
+                    img_w * padded_input_size[0] / actual_input_size[0],
+                    img_h * padded_input_size[1] / actual_input_size[1]
+                ],
+                                 dtype=np.float32)
+                warp_mat = get_warp_matrix(
+                    center=center,
+                    scale=scale,
+                    rot=0,
+                    output_size=padded_input_size)
+
+            _img = cv2.warpAffine(
+                img,
+                warp_mat,
+                padded_input_size,
+                flags=cv2.INTER_LINEAR,
+                borderValue=self.pad_val)
+
+            imgs.append(_img)
+
+            # Store the transform information w.r.t. the main input size
+            if i == 0:
+                results['img_shape'] = padded_input_size[::-1]
+                results['input_center'] = center
+                results['input_scale'] = scale
+                results['input_size'] = padded_input_size
+
+        if self.aug_scales:
+            results[img_keys] = imgs
+            results['aug_scales'] = self.aug_scales
+        else:
+            results[img_keys] = imgs[0]
+            results['aug_scale'] = None
+
+        return results
+
 
 @TRANSFORMS.register_module()
 class StereoBottomupRandomAffine(BottomupRandomAffine):

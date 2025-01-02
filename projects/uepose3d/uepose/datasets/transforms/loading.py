@@ -71,11 +71,10 @@ class LoadStereoImage(LoadImageFromFile):
                 img = img.astype(np.float32)
             return img
 
-        if 'img_path' in results and 'img_paths' not in results:
+        if isinstance(results['img_path'],str):
             left_img = load_image(results['img_path'])
             right_img = load_image(results['img_path'])
-        elif 'img_path' not in results and 'img_paths' in results:
-        # filename = results['img_path']
+        elif isinstance(results['img_path'],np.ndarray):
             left_img = load_image(results['img_paths'][0][0])
             right_img = load_image(results['img_paths'][0][1])
         results['img'] = left_img

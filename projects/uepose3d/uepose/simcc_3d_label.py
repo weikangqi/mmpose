@@ -120,7 +120,8 @@ class StereoSimCC3DLabel(BaseKeypointCodec):
 
         if keypoints_visible is None:
             keypoints_visible = np.ones(keypoints.shape[:2], dtype=np.float32)
-        lifting_target = [None]
+        num_ins,_ =keypoints_visible.shape
+        lifting_target = [None for _ in range(num_ins)]
         root_z = self.root_z
         with_z_label = False
         if keypoints_3d is not None:
@@ -135,7 +136,7 @@ class StereoSimCC3DLabel(BaseKeypointCodec):
             x, y, z, keypoint_weights = self._generate_gaussian_3d(
                 keypoints_3d, keypoints_visible)
             weight_z = keypoint_weights
-            with_z_label = True
+            # with_z_label = [True for i in range(num_ins)]
         else:
             if keypoints.shape != np.zeros([]).shape:
                 keypoints_z = np.ones(
@@ -149,7 +150,7 @@ class StereoSimCC3DLabel(BaseKeypointCodec):
                 x, y, z = np.zeros((3, 1), dtype=np.float32)
                 keypoint_weights = np.ones((1, ))
             weight_z = np.zeros_like(keypoint_weights)
-            with_z_label = False
+            # with_z_label = [False for i in range(num_ins)]
 
         encoded = dict(
             keypoint_x_labels=x,
@@ -159,7 +160,7 @@ class StereoSimCC3DLabel(BaseKeypointCodec):
             root_z=root_z,
             keypoint_weights=keypoint_weights,
             weight_z=weight_z,
-            # with_z_label=[with_z_label]
+            # with_z_label=with_z_label
             )
 
         return encoded

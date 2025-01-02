@@ -1,5 +1,5 @@
-from .uepose3d_dataset import UnrealPose3dDataset
+from .uepose3d_dataset import *
 
 
 
-__all__=['UnrealPose3dDataset']
+# __all__=['UnrealPose3dDataset']

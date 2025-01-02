@@ -9,9 +9,10 @@ from mmengine.runner import Runner
 
 def parse_args():
     
-    cfg_path = 'projects/uepose3d/configs/rtmo-l_16xb16-600e_coco-256x256.py'
-    work_dir = ' work_dirs/rtmo-l_16xb16-600e_coco-256x256'
-    show_dir = 'work_dirs/rtmo-l_16xb16-600e_coco-256x256'
+    # cfg_path = 'projects/uepose3d/configs/rtmo-s_8xb32-600e_coco-640x640.py'
+    cfg_path = 'projects/uepose3d/configs/rtmo-s_resnet-50_coco-256x256 copy.py'
+    work_dir = 'work_dirs/uepose_l'
+    show_dir = 'work_dirs/uepose_l'
     
     parser = argparse.ArgumentParser(description='Train a pose model')
     parser.add_argument('--config',required=False, help='train config file path', default=cfg_path)

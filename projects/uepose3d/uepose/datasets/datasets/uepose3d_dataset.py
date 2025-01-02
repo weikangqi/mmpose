@@ -233,6 +233,7 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 'iscrowd': 0,
                 'img_path': img_paths,
                 'img_ids': [img['id'] for img in imgs],
+                'img_id': imgs[0]['id'],
                 'lifting_target': kpts_3d[target_idx],
                 'lifting_target_visible': keypoints_visible[target_idx],
                 'target_img_paths': list(img_paths[target_idx]),

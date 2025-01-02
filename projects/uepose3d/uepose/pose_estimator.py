@@ -7,12 +7,12 @@ from torch import Tensor
 from mmpose.registry import MODELS
 from mmpose.utils.typing import (ConfigType, InstanceList, OptConfigType,
                                  OptMultiConfig, PixelDataList, SampleList)
-from mmpose.models.pose_estimators.base import BasePoseEstimator
+from mmpose.models.pose_estimators.bottomup import BottomupPoseEstimator
 
 
 
 @MODELS.register_module()
-class StereoBottomupPoseEstimator(BasePoseEstimator):
+class StereoBottomupPoseEstimator(BottomupPoseEstimator):
     
     
     def __init__(self,
@@ -50,21 +50,22 @@ class StereoBottomupPoseEstimator(BasePoseEstimator):
         """
         # TODO 
         n,c,h,w = inputs.shape
-        if w // 2 == 640:
-            left_input = inputs[:,:,:,:w // 2]
-            right_input = inputs[:,:,:,w // 2:]
+        
+        left_input = inputs[:,:,:,:w // 2]
+        right_input = inputs[:,:,:,w // 2:]
             
-        else:
-            # 正常的COCO的数据集
-            feats = self.extract_feat(inputs)
+        # else:
+        # 正常的COCO的数据集
+        left_feats = self.extract_feat(left_input)
+        # right_feats = self.extract_feat(right_input)
 
-            losses = dict()
+        losses = dict()
 
-            if self.with_head:
-                losses.update(
-                    self.head.loss(feats, data_samples, train_cfg=self.train_cfg))
+        if self.with_head:
+            losses.update(
+                self.head.loss(left_feats, data_samples, train_cfg=self.train_cfg))
 
-            return losses
+        return losses
     
     def predict(self, inputs: Union[Tensor, List[Tensor]],
                 data_samples: SampleList) -> SampleList:
