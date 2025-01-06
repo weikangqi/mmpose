@@ -7,7 +7,7 @@ from .visualizer_3d import StereoPose3dLocalVisualizerPlus
 from .data_processor import StereoPoseDataPreprocessor
 from .annotation_processor import StereoYOLOXPoseAnnotationProcessor
 from .models import RepViT
-
+from .evaluation import StereoCocoMetric
 
 __all__ = [
     'StereoSimCC3DLabel',
@@ -18,6 +18,6 @@ __all__ = [
     'UnrealPose3dDataset','StereoPose3dLocalVisualizerPlus',
     'StereoPoseDataPreprocessor','StereoFilterAnnotations','StereoBottomupResize',
     'StereoYOLOXPoseAnnotationProcessor',
-    'RepViT'
+    'RepViT','StereoCocoMetric'
 ]
 

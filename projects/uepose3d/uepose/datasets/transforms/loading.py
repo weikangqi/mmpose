@@ -112,5 +112,19 @@ class LoadStereoImage(LoadImageFromFile):
                 f'`{str(e)}` occurs when loading `{results["img_path"]}`.'
                 'Please check whether the file exists.')
             raise e
+        # 转成
+        results['area'] = np.array(results['area'])
+        results['right_area'] = np.array(results['right_area'])
+        results['category_id'] = np.array(results['category_id'])
+        # if results['image_id'] == 278:
+        #     # if not(len(results['right_bbox'])  == len(results['right_keypoints'])== len(results['right_keypoints_visible']) == len(results['right_area'])):
+        #     print("bad data")
+        # for item in results:
+            # assert len(item['area']) ==  len(item['right_area'])
 
+            # assert  len(item['keypoints']) == len(item['right_keypoints'])
+
+            # assert len(item['keypoints_visible']) == len(item['right_keypoints_visible'])
+            
+            # assert len(item['bbox']) == len(item['right_bbox'])
         return results

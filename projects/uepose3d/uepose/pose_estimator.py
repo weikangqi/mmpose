@@ -56,7 +56,7 @@ class StereoBottomupPoseEstimator(BottomupPoseEstimator):
             
         # else:
         # 正常的COCO的数据集
-        left_feats = self.extract_feat(left_input)
+        left_feats = self.extract_feat([left_input,right_input])
         # right_feats = self.extract_feat(right_input)
 
         losses = dict()
@@ -73,48 +73,65 @@ class StereoBottomupPoseEstimator(BottomupPoseEstimator):
         assert self.with_head, (
             'The model must have head to perform prediction.')
 
-        multiscale_test = self.test_cfg.get('multiscale_test', False)
-        flip_test = self.test_cfg.get('flip_test', False)
+        # multiscale_test = self.test_cfg.get('multiscale_test', False)
+        # flip_test = self.test_cfg.get('flip_test', False)
 
         # enable multi-scale test
-        aug_scales = data_samples[0].metainfo.get('aug_scales', None)
-        if multiscale_test:
-            assert isinstance(aug_scales, list)
-            assert is_list_of(inputs, Tensor)
-            # `inputs` includes images in original and augmented scales
-            assert len(inputs) == len(aug_scales) + 1
-        else:
-            assert isinstance(inputs, Tensor)
-            # single-scale test
-            inputs = [inputs]
+        # data_samples = data_samples[0]
+        # aug_scales = data_samples[0].metainfo.get('aug_scales', None)
+        # if multiscale_test:
+        #     assert isinstance(aug_scales, list)
+        #     assert is_list_of(inputs, Tensor)
+        #     # `inputs` includes images in original and augmented scales
+        #     # assert len(inputs) == len(aug_scales) + 1
+        # else:
+        #     assert isinstance(inputs, Tensor)
+        #     # single-scale test
+        #     inputs = [inputs]
 
         feats = []
-        for _inputs in inputs:
-            if flip_test:
-                _feats_orig = self.extract_feat(_inputs)
-                _feats_flip = self.extract_feat(_inputs.flip(-1))
-                _feats = [_feats_orig, _feats_flip]
-            else:
-                _feats = self.extract_feat(_inputs)
+        
+        n,c,h,w = inputs.shape
+        
+        left_input = inputs[:,:,:,:w // 2]
+        right_input = inputs[:,:,:,w // 2:]
+        
+        # feats_right = []
+        # for _inputs in inputs:
+        #     if flip_test:
+        #         _feats_orig = self.extract_feat(_inputs)
+        #         _feats_flip = self.extract_feat(_inputs.flip(-1))
+        #         _feats = [_feats_orig, _feats_flip]
+        #     else:
+        #         _feats = self.extract_feat(_inputs)
 
-            feats.append(_feats)
+        #     feats.append(_feats)
 
-        if not multiscale_test:
-            feats = feats[0]
+        # if not multiscale_test:
+        #     feats = feats[0]
+        feats = self.extract_feat([left_input,right_input])
+        preds_left,preds_right = self.head.predict(feats, data_samples, test_cfg=self.test_cfg)
 
-        preds = self.head.predict(feats, data_samples, test_cfg=self.test_cfg)
-
-        if isinstance(preds, tuple):
-            batch_pred_instances, batch_pred_fields = preds
+        if isinstance(preds_left, tuple):
+            batch_pred_instances_left, batch_pred_fields_left = preds_left
         else:
-            batch_pred_instances = preds
-            batch_pred_fields = None
+            batch_pred_instances_left = preds_left
+            batch_pred_fields_left = None
+        
+        if isinstance(preds_right, tuple):
+            batch_pred_instances_right, batch_pred_fields_right = preds_right
+        else:
+            batch_pred_instances_right = preds_right
+            batch_pred_fields_right = None
 
-        results = self.add_pred_to_datasample(batch_pred_instances,
-                                              batch_pred_fields, data_samples)
+        results_left = self.add_pred_to_datasample(batch_pred_instances_left,
+                                              batch_pred_fields_left, data_samples[0])
+        results_right = self.add_pred_to_datasample(batch_pred_instances_right,
+                                              batch_pred_fields_right, data_samples[1])
 
-        return results
-
+        return results_left+results_right
+        # 合并
+        # return [results_left , results_right]
     def add_pred_to_datasample(self, batch_pred_instances: InstanceList,
                                batch_pred_fields: Optional[PixelDataList],
                                batch_data_samples: SampleList) -> SampleList:

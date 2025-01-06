@@ -15,7 +15,7 @@ import torch.nn.functional as F
 class StereoPoseDataPreprocessor(PoseDataPreprocessor):
     
     
-    def __init__(self, mean: Sequence[float] = None, std: Sequence[float] = None, pad_size_divisor: int = 1, pad_value: float | int = 0, bgr_to_rgb: bool = False, rgb_to_bgr: bool = False, non_blocking: bool | None = False, batch_augments: List[dict] | None = None):
+    def __init__(self, mean: Sequence[float] = None, std: Sequence[float] = None, pad_size_divisor: int = 1, pad_value:  Union[float, int] = 0, bgr_to_rgb: bool = False, rgb_to_bgr: bool = False, non_blocking:  Optional[bool] = False, batch_augments: Optional[List[dict]] = None):
         super().__init__(mean, 
                          std, 
                          pad_size_divisor, 
@@ -42,11 +42,16 @@ class StereoPoseDataPreprocessor(PoseDataPreprocessor):
         data = self.cast_data(data)  # type: ignore
         data = self._forward(data=data, training=training,inputs_key='inputs')
         data = self._forward(data=data, training=training,inputs_key='right_inputs')
-        left_inputs,right_inputs, data_samples = data['inputs'],data['right_inputs'], data['data_samples']
+        left_inputs,right_inputs, data_samples_list = data['inputs'],data['right_inputs'], data['data_samples']
 
         # update metainfo since the image shape might change
         batch_input_shape = tuple(left_inputs[0].size()[-2:])
-        for data_sample, pad_shape in zip(data_samples, batch_pad_shape):
+        for data_sample, pad_shape in zip(data_samples_list[0], batch_pad_shape):
+            data_sample.set_metainfo({
+                'batch_input_shape': batch_input_shape,
+                'pad_shape': pad_shape
+            })
+        for data_sample, pad_shape in zip(data_samples_list[1], batch_pad_shape):
             data_sample.set_metainfo({
                 'batch_input_shape': batch_input_shape,
                 'pad_shape': pad_shape
@@ -55,9 +60,9 @@ class StereoPoseDataPreprocessor(PoseDataPreprocessor):
         # apply batch augmentations
         if training and self.batch_augments is not None:
             for batch_aug in self.batch_augments:
-                inputs, data_samples = batch_aug(inputs, data_samples)
-
-        return {'inputs': torch.concat([left_inputs,right_inputs],dim=-1), 'data_samples': data_samples}
+                inputs, data_samples_list[0] = batch_aug(inputs, data_samples_list[0])
+                inputs, data_samples_list[1] = batch_aug(inputs, data_samples_list[1])
+        return {'inputs': torch.cat([left_inputs,right_inputs],dim=-1), 'data_samples': data_samples_list}
     
     
     

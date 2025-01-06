@@ -167,7 +167,25 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
         """
         img_h, img_w = results['img_shape'][:2]
         w, h = self.input_size
+        pad_b = h - img_h
+        pad_w = w - img_w
 
+# 在上下两侧均匀填充
+ 
+        results['img'] = np.pad(
+            results['img'],
+            pad_width=((0, pad_b), (0, pad_w),(0,0)),  # 上下、左右的填充
+            mode='constant',
+            constant_values=0
+        )
+        results['right_img'] = np.pad(
+            results['right_img'],
+            pad_width=((0, pad_b), (0, pad_w),(0,0)),  # 上下、左右的填充
+            mode='constant',
+            constant_values=0
+        )
+        results['input_size'] = self.input_size
+       
         offset_rate, scale_rate, rotate, shear = self._get_transform_params()
 
         if 'affine' in self.transform_mode:
@@ -203,19 +221,20 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
                 shear=shear)
             
         # warp image and keypoints
-        results['img'] = self._transform(results['img'], warp_mat,
-                                         (int(w), int(h)))
+        # results['img'] = self._transform(results['img'], warp_mat,
+        #                                  (int(w), int(h)))
         
-        if 'right_img' in results:
-            results['right_img'] = self._transform(results['right_img'], warp_mat,
-                                            (int(w), int(h)))
+        # if 'right_img' in results:
+        #     results['right_img'] = self._transform(results['right_img'], warp_mat,
+        #                                     (int(w), int(h)))
 
         if 'keypoints' in results:
             # Only transform (x, y) coordinates
-            kpts = cv2.transform(results['keypoints'], warp_mat)
-            if kpts.shape[-1] == 3:
-                kpts = kpts[..., :2] / kpts[..., 2:3]
-            results['keypoints'] = kpts
+            # kpts = cv2.transform(results['keypoints'], warp_mat)
+            # kpts = results['keypoints']
+            # if kpts.shape[-1] == 3:
+            #     kpts = kpts[..., :2] / kpts[..., 2:3]
+            # results['keypoints'] = kpts
 
             if self.clip_border:
                 results['keypoints'], results[
@@ -225,54 +244,58 @@ class StereoBottomupRandomAffine(BottomupRandomAffine):
 
         if 'right_keypoints' in results:
             # Only transform (x, y) coordinates
-            kpts = cv2.transform(results['right_keypoints'], warp_mat)
-            if kpts.shape[-1] == 3:
-                kpts = kpts[..., :2] / kpts[..., 2:3]
-            results['right_keypoints'] = kpts
+            # kpts = cv2.transform(results['right_keypoints'], warp_mat)
+            # kpts = results['right_keypoints']
+            # if kpts.shape[-1] == 3:
+            #     kpts = kpts[..., :2] / kpts[..., 2:3]
+            # results['right_keypoints'] = kpts
 
             if self.clip_border:
                 results['right_keypoints'], results[
                     'right_keypoints_visible'] = keypoint_clip_border(
                         results['right_keypoints'], results['right_keypoints_visible'],
                         (w, h))
-        else:
-            results['right_keypoints'] =  results['keypoints']
-            results['right_keypoints_visible'] = results['keypoints_visible']
+        # else:
+        #     results['right_keypoints'] =  results['keypoints']
+        #     results['right_keypoints_visible'] = results['keypoints_visible']
 
 
-        if 'bbox' in results:
-            bbox = bbox_xyxy2corner(results['bbox'])
-            bbox = cv2.transform(bbox, warp_mat)
-            if bbox.shape[-1] == 3:
-                bbox = bbox[..., :2] / bbox[..., 2:3]
-            if not self.bbox_keep_corner:
-                bbox = bbox_corner2xyxy(bbox)
-            if self.clip_border:
-                bbox = bbox_clip_border(bbox, (w, h))
-            results['bbox'] = bbox
+        # if 'bbox' in results:
+        #     bbox = bbox_xyxy2corner(results['bbox'])
+        #     # bbox = cv2.transform(bbox, warp_mat)
+        #     if bbox.shape[-1] == 3:
+        #         bbox = bbox[..., :2] / bbox[..., 2:3]
+        #     if not self.bbox_keep_corner:
+        #         bbox = bbox_corner2xyxy(bbox)
+        #     if self.clip_border:
+        #         bbox = bbox_clip_border(bbox, (w, h))
+        #     results['bbox'] = bbox
             
-        if 'right_bbox' in results:
-            bbox = bbox_xyxy2corner(results['right_bbox'])
-            bbox = cv2.transform(bbox, warp_mat)
-            if bbox.shape[-1] == 3:
-                bbox = bbox[..., :2] / bbox[..., 2:3]
-            if not self.bbox_keep_corner:
-                bbox = bbox_corner2xyxy(bbox)
-            if self.clip_border:
-                bbox = bbox_clip_border(bbox, (w, h))
-            results['right_bbox'] = bbox
-        else:
-            results['right_bbox'] = results['bbox']
+        # if 'right_bbox' in results:
+        #     bbox = bbox_xyxy2corner(results['right_bbox'])
+        #     # bbox = cv2.transform(bbox, warp_mat)
+        #     if bbox.shape[-1] == 3:
+        #         bbox = bbox[..., :2] / bbox[..., 2:3]
+        #     if not self.bbox_keep_corner:
+        #         bbox = bbox_corner2xyxy(bbox)
+        #     if self.clip_border:
+        #         bbox = bbox_clip_border(bbox, (w, h))
+        #     results['right_bbox'] = bbox
+        # else:
+        #     results['right_bbox'] = results['bbox']
 
-        if 'area' in results:
-            warp_mat_for_area = warp_mat
-            if warp_mat.shape[0] == 2:
-                aux_row = np.array([[0.0, 0.0, 1.0]], dtype=warp_mat.dtype)
-                warp_mat_for_area = np.concatenate((warp_mat, aux_row))
-            results['area'] *= np.linalg.det(warp_mat_for_area)
+        # if 'area' in results:
+        #     warp_mat_for_area = warp_mat
+        #     if warp_mat.shape[0] == 2:
+        #         aux_row = np.array([[0.0, 0.0, 1.0]], dtype=warp_mat.dtype)
+        #         warp_mat_for_area = np.concatenate((warp_mat, aux_row))
+            
+        #     results['area'] *= np.linalg.det(warp_mat_for_area)
 
         results['input_size'] = self.input_size
-        results['warp_mat'] = warp_mat
-        
+        # results['warp_mat'] = warp_mat
+        if 'bbox_labels' not in results:
+            bbox_labels = np.array(results['category_id']).astype(np.int8) - 1
+            results['bbox_labels'] = bbox_labels
 
         return results

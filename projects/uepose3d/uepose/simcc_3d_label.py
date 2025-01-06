@@ -226,7 +226,8 @@ class StereoSimCC3DLabel(BaseKeypointCodec):
         self,
         keypoints: np.ndarray,
         keypoints_visible: Optional[np.ndarray] = None
-    ) -> tuple[ndarray, ndarray, ndarray, ndarray]:
+    ):
+    # :-> tuple[ndarray, ndarray, ndarray, ndarray]:
         """Encoding keypoints into SimCC labels with Gaussian Label Smoothing
         strategy."""
 

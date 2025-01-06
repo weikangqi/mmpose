@@ -252,7 +252,7 @@ class RepViT(BaseBackbone):
                 outs.append(x)
         # x = torch.nn.functional.adaptive_avg_pool2d(x, 1).flatten(1)
         # x = self.classifier(x)
-        return outs
+        return x
 
 # from timm.models import register_model
 

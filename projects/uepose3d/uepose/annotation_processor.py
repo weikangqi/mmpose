@@ -8,7 +8,7 @@ import numpy as np
 class StereoYOLOXPoseAnnotationProcessor(YOLOXPoseAnnotationProcessor):
     
     
-    def __init__(self, expand_bbox: bool = False, input_size: Tuple | None = None):
+    def __init__(self, expand_bbox: bool = False, input_size: Optional[Tuple] = None):
         super().__init__(expand_bbox, input_size)
         
         

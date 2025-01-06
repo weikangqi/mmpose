@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import datetime
+from multiprocessing import process
 import os.path as osp
 import tempfile
 from collections import OrderedDict, defaultdict
@@ -92,7 +93,8 @@ class CocoMetric(BaseMetric):
             will be used instead. Defaults to ``None``
     """
     default_prefix: Optional[str] = 'coco'
-
+    results_left = []
+    results_right = []
     def __init__(self,
                  ann_file: Optional[str] = None,
                  use_area: bool = True,
@@ -178,9 +180,12 @@ class CocoMetric(BaseMetric):
                     f'CocoMetric for dataset '
                     f"{dataset_meta['dataset_name']} has successfully "
                     f'loaded the annotation file from {ann_file}', 'current')
+    def process(self, data_batch, data_samples):
+        self.process_(data_batch,[data_samples[0]],"left")
+        self.process_(data_batch,[data_samples[1]],"right")
 
-    def process(self, data_batch: Sequence[dict],
-                data_samples: Sequence[dict]) -> None:
+    def process_(self, data_batch: Sequence[dict],
+                data_samples: Sequence[dict],result_str):
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -195,6 +200,7 @@ class CocoMetric(BaseMetric):
                 - 'img_id': The image_id of the sample
                 - 'pred_instances': The prediction results of instance(s)
         """
+        # results = []
         for data_sample in data_samples:
             if 'pred_instances' not in data_sample:
                 raise ValueError(
@@ -261,7 +267,11 @@ class CocoMetric(BaseMetric):
                 gt['raw_ann_info'] = anns if isinstance(anns, list) else [anns]
 
             # add converted result to the results list
-            self.results.append((pred, gt))
+            if result_str == 'left':
+                self.results_left.append((pred, gt))
+            if result_str == 'right':
+                self.results_right.append((pred,gt))
+        # return results
 
     def gt_to_coco_json(self, gt_dicts: Sequence[dict],
                         outfile_prefix: str) -> str:

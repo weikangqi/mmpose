@@ -6,7 +6,8 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
-from mmdet.utils import ConfigType, reduce_mean
+
+# from mmdet.utils import ConfigType, reduce_mean
 from mmengine.model import BaseModule, bias_init_with_prob
 from mmengine.structures import InstanceData
 from torch import Tensor
@@ -20,7 +21,16 @@ from mmpose.utils.typing import Features, OptSampleList, Predictions
 from .yoloxpose_head import YOLOXPoseHead
 
 EPS = 1e-8
-
+from mmengine.config import ConfigDict
+import torch.distributed as dist
+ConfigType = Union[ConfigDict, dict]
+def reduce_mean(tensor):
+    """"Obtain the mean of tensor on different GPUs."""
+    if not (dist.is_available() and dist.is_initialized()):
+        return tensor
+    tensor = tensor.clone()
+    dist.all_reduce(tensor.div_(dist.get_world_size()), op=dist.ReduceOp.SUM)
+    return tensor
 
 class RTMOHeadModule(BaseModule):
     """RTMO head module for one-stage human pose estimation.

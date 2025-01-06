@@ -41,6 +41,8 @@ class StereoFilterAnnotations(FilterAnnotations):
         Returns:
             dict: Updated result dict.
         """
+        import copy
+        y = copy.deepcopy(results)
         assert 'keypoints' in results
         kpts = results['keypoints']
         if kpts.shape[0] == 0:
@@ -63,6 +65,9 @@ class StereoFilterAnnotations(FilterAnnotations):
         if self.by_area and 'area' in results:
             area = results['area']
             tests.append(area >= self.min_gt_area)
+        if self.by_area and 'right_area' in results:
+            area_right = results['right_area']
+            tests_right.append(area_right >= self.min_gt_area)
         if self.by_kpt:
             kpts_vis = results['keypoints_visible']
             if kpts_vis.ndim == 3:
@@ -85,7 +90,8 @@ class StereoFilterAnnotations(FilterAnnotations):
             if self.keep_empty:
                 return None
 
-
+        # 修改bbox_score -> bbox_scores
+        # if(type('bbox') )
         keys = ('bbox', 'bbox_score', 'category_id', 'keypoints',
                 'keypoints_visible', 'area')
         for key in keys:
@@ -93,11 +99,20 @@ class StereoFilterAnnotations(FilterAnnotations):
                 results[key] = results[key][keep]
                 
         keys = ('right_bbox', 'right_bbox_score', 'right_keypoints',
-                'right_keypoints_visible',)
+                'right_keypoints_visible','right_area')
         for key in keys:
             if key in results:
-                results[key] = results[key][keep_right]     
+                results[key] = results[key][keep_right]    
+        if not  (keep_right == keep).all():
+            print("dd")
+        # assert (keep_right == keep).all()
+        # assert len(results['area']) ==  len(results['right_area'])
 
+        # assert  len(results['keypoints']) == len(results['right_keypoints'])
+
+        # assert len(results['keypoints_visible']) == len(results['right_keypoints_visible'])
+            
+        # assert len(results['bbox']) == len(results['right_bbox'])
         return results
 
 

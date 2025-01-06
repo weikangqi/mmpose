@@ -183,12 +183,12 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 kpts_3d[j] = np.array(ann['keypoints_3d'], dtype=np.float32).reshape(-1,4)[:, :3]
                 keypoints_visible[j] = np.array(
                     ann['keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
-                
+                keypoints_visible[j] = np.minimum(1, keypoints_visible[j])
                 
                 if 'right_keypoints' in ann:
                     right_kpts[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, :2]
                     right_keypoints_visible[j] = np.array(ann['right_keypoints'], dtype=np.float32).reshape(-1,3)[:, 2]
-                    
+                    right_keypoints_visible[j] = np.minimum(1, right_keypoints_visible[j])
                 if 'scale' in ann:
                     scales[j] = np.array(ann['scale'])
                 if 'center' in ann:
@@ -206,7 +206,7 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
 
             img_paths = np.array(
                  [
-                [f'{self.data_prefix["img"]}/' + img['file_name'],f'{self.data_prefix["img"]}/' + img['right_file_name'] ] for img in imgs
+                [f'{self.data_prefix["img"]}/' + img['left_file_name'],f'{self.data_prefix["img"]}/' + img['right_file_name'] ] for img in imgs
             ]
             )
             factors = np.zeros((kpts_3d.shape[0], ), dtype=np.float32)
@@ -220,7 +220,7 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
             cam_param['w'] = 640
             cam_param['h'] = 480
             cam_param = {'f': [cam_param['K'][0][0],cam_param['K'][1][1]], 'c': [cam_param['K'][0][2],cam_param['K'][1][2]]}
-
+            
             instance_info = {
                 'num_keypoints': num_keypoints,
                 'keypoints': kpts,
@@ -241,13 +241,15 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 'factor': factors,
                 'target_idx': target_idx,
                 'bbox': bboxes,
-                'bbox_scales': bbox_scales,
-                'bbox_scores': bbox_scores,
+                # 'bbox_scales': bbox_scales,
+                'bbox_score': bbox_scores,
+                'area': np.clip((bboxes[0][2] - bboxes[0][0])*(bboxes[0][3] - bboxes[0][1])*0.53,a_min=1.0,a_max=None),# [x_min, y_min, x_max, y_max]
                 'right_keypoints': right_kpts,
                 'right_keypoints_visible': right_keypoints_visible,
                 'right_bbox': right_bboxes,
-                'right_bbox_scales': right_bbox_scales,
-                'right_bbox_scores': right_bbox_scores,
+                # 'right_bbox_scales': right_bbox_scales,
+                'right_bbox_score': right_bbox_scores,
+                'right_area':np.clip((right_bboxes[0][2] - right_bboxes[0][0])*(right_bboxes[0][3] - right_bboxes[0][1]),a_min=1.0,a_max=None)
             }
 
             instance_list.append(instance_info)

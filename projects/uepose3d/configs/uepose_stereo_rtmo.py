@@ -2,7 +2,7 @@ _base_ = ['../../../configs/_base_/default_runtime.py']
 custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
 
 # runtime
-train_cfg = dict(max_epochs=1000, val_interval=10, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=1000, val_interval=2, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
@@ -52,24 +52,12 @@ param_scheduler = [
 ]
 
 
-# vis_backends = [
-#     dict(type='LocalVisBackend'),
-# ]
-# visualizer = dict(
-#     type='StereoPose3dLocalVisualizerPlus', vis_backends=vis_backends, name='visualizer')
 
 # data
 input_size = (640, 640)
 metafile = 'configs/_base_/datasets/uepose.py'
 codec = dict(type='StereoYOLOXPoseAnnotationProcessor', input_size=input_size)
-# codec = dict(
-#     type='StereoSimCC3DLabel',
-#     input_size=(640, 640, 640),
-#     sigma=(6., 6.93, 6.),
-#     simcc_split_ratio=2.0,
-#     normalize=False,
-#     use_dark=False,
-#     root_index=(11, 12))
+
 
 train_pipeline = [
     dict(type='LoadStereoImage'),
@@ -82,17 +70,15 @@ train_pipeline = [
         clip_border=True,
         transform_mode='perspective',
     ),
-    dict(type='StereoYOLOXHSVRandomAug'),
-    dict(type='StereoRandomFlip',direction='horizontal'),
+    # dict(type='StereoYOLOXHSVRandomAug'),
+    # dict(type='StereoRandomFlip',direction='horizontal'),
     dict(type='StereoFilterAnnotations', by_kpt=True, by_box=True, keep_empty=False),
     dict(type='StereoGenerateTarget', encoder=codec),
     dict(type='StereoPackPoseInputs', 
          meta_keys=('id',
                     'img_paths',
                     'keypoints',
-                    'keypoints_visible',
-                    'right_keypoints',
-                    'right_keypoints_visible')),
+                    'keypoints_visible')),
 ]
 
 data_mode = 'bottomup'
@@ -115,20 +101,6 @@ dataset_usepose = dict(
 
 
 
-# dataset_coco_train = dict(
-#     type='CocoDataset',
-#     data_root='data/',
-#     data_mode=data_mode,
-#     ann_file=f'coco/annotations/{samll_preifix}person_keypoints_train2017.json',
-#     data_prefix=dict(img='coco/train2017'),
-#     pipeline=[
-#         dict(
-#             type='KeypointConverter',
-#             num_keypoints=21,
-#             mapping=[(i,i) for i in range(17)])
-#     ],
-# )
-
 
 train_dataset = dict(
     type='CombinedDataset',
@@ -140,7 +112,7 @@ train_dataset = dict(
 
 
 train_dataloader = dict(
-    batch_size=4,
+    batch_size=2,
     num_workers=8,
     persistent_workers=True,
     pin_memory=True,
@@ -148,61 +120,68 @@ train_dataloader = dict(
     dataset=train_dataset)
 
 
-val_dataset = train_dataset
-val_dataloader = train_dataloader
+
+
 
 val_pipeline = [
     dict(type='LoadStereoImage'),
+    
     dict(
-        type='StereoBottomupResize', input_size=input_size, pad_val=(114, 114, 114)),
+        type='StereoBottomupRandomAffine',
+        input_size=input_size,
+        scale_type='long',
+        pad_val=(114, 114, 114),
+        bbox_keep_corner=False,
+        clip_border=True,
+        transform_mode='perspective',
+    ),
+    dict(
+        type = 'StereoInputResize',
+        input_size=input_size,
+    ),
+    # dict(type='StereoGenerateTarget', encoder=codec),
     dict(type='StereoPackPoseInputs', 
          meta_keys=('id', 'img_id', 'img_path', 'ori_shape', 'img_shape',
                    'input_size', 'input_center', 'input_scale'))
 ]
 
 
-dataset_coco_val = dict(
-    type='CocoDataset',
-    data_root='data/',
-    data_mode=data_mode,
-    ann_file=f'coco/annotations/{samll_preifix}person_keypoints_val2017.json',
-    data_prefix=dict(img='coco/val2017'),
-    pipeline=[
-        dict(
-            type='KeypointConverter',
-            num_keypoints=21,
-            mapping=[(i,i) for i in range(17)])
-    ],
-)
 
 
-val_dataset = dict(
-    type='CombinedDataset',
-    datasets=[dataset_usepose],
-    pipeline=val_pipeline,
-    metainfo=dict(from_file='/mmpose3d/configs/_base_/datasets/uepose.py'),
-    test_mode=False)
 
 val_dataloader = dict(
-    batch_size=8,
-    num_workers=2,
+    batch_size=1,
+    num_workers=4,
     persistent_workers=True,
     pin_memory=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False, round_up=False),
-    dataset= val_dataset
-)
+    dataset= dict(
+            type='UnrealPose3dDataset',
+            data_root=data_root,
+            data_mode=data_mode,
+            ann_file='uecoco_3d/annotations/test_stereo.json',
+            data_prefix=dict(img='uecoco_3d/test_stereo'),
+            test_mode=True,
+            pipeline= val_pipeline
+            #     dict(
+            #         type='KeypointConverter',
+            #         num_keypoints=21,
+            #         mapping=[(i,i) for i in range(21)])
+            # ]
+        )
+    )
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    type='CocoMetric',
+    type='StereoCocoMetric',
     ann_file=f'/mmpose/data/uecoco_3d/annotations/test_stereo.json',
     score_mode='bbox',
     nms_mode='none',
-    gt_converter= dict(
-        type='KeypointConverter',
-        num_keypoints=21,
-        mapping=[(i, i) for i in range(17)])
+    # gt_converter= dict(
+    #     type='KeypointConverter',
+    #     num_keypoints=21,
+    #     mapping=[(i, i) for i in range(17)])
 )
 
 
@@ -229,73 +208,24 @@ model = dict(
         batch_augments=[
         ]),
     backbone=dict(
-        type='RepViT',
-        cfgs =   [
-            # k, t, c, SE, HS, s 
-            [3,   2,  80, 1, 0, 1],
-            [3,   2,  80, 0, 0, 1],
-            [3,   2,  80, 1, 0, 1],
-            [3,   2,  80, 0, 0, 1],
-            [3,   2,  80, 1, 0, 1],
-            [3,   2,  80, 0, 0, 1],
-            [3,   2,  80, 0, 0, 1],
-            [3,   2,  160, 0, 0, 2],
-            [3,   2,  160, 1, 0, 1],
-            [3,   2,  160, 0, 0, 1],
-            [3,   2,  160, 1, 0, 1],
-            [3,   2,  160, 0, 0, 1],
-            [3,   2,  160, 1, 0, 1],
-            [3,   2,  160, 0, 0, 1],
-            [3,   2,  160, 0, 0, 1],
-            [3,   2,  320, 0, 1, 2],
-            [3,   2,  320, 1, 1, 1],
-            [3,   2,  320, 0, 1, 1],
-            [3,   2,  320, 1, 1, 1],
-            [3,   2,  320, 0, 1, 1],
-            [3,   2,  320, 1, 1, 1],
-            [3,   2,  320, 0, 1, 1],
-            [3,   2,  320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 1, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 320, 0, 1, 1],
-            [3,   2, 640, 0, 1, 2],
-            [3,   2, 640, 1, 1, 1],
-            [3,   2, 640, 0, 1, 1],
-    ] ,
-        # init_cfg=dict(
-        #     type='Pretrained',
-        #     checkpoint='/workspace/mmpose3d/ckpt/new_repvit_m2_3_distill_450e.pth',
-        #     prefix='backbone.',
-        # )
+        type='StereoCSPDarknet',
+        deepen_factor=deepen_factor,
+        widen_factor=widen_factor,
+        out_indices=(2, 3, 4),
+        spp_kernal_sizes=(5, 9, 13),
+        norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
+        act_cfg=dict(type='Swish'),
+        init_cfg=dict(
+            type='Pretrained',
+            checkpoint='https://download.openmmlab.com/mmdetection/v2.0/'
+            'yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_'
+            '20211121_095711-4592a793.pth',
+            prefix='backbone.',
+        )
         ),
     neck=dict(
-        type='HybridEncoder',
-        in_channels=[160, 320, 640],
+        type='StereoHybridEncoder',
+        in_channels=[256, 512,1024 ],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,
@@ -316,7 +246,7 @@ model = dict(
             norm_cfg=dict(type='BN'),
             num_outs=2)),
     head=dict(
-        type='RTMOHead',
+        type='StereoRTMO_Head',
         num_keypoints=21,
         featmap_strides=(16, 32),
         head_module_cfg=dict(
@@ -381,8 +311,6 @@ model = dict(
     ),
     test_cfg=dict(
         input_size=input_size,
-        score_thr=0.1,
-        nms_thr=0.65,
+        score_thr=0.7,
+        nms_thr=0.15,
     ))
-
-

@@ -12,7 +12,7 @@ from mmengine.dataset import BaseDataset, force_full_init
 from mmengine.fileio import exists, get_local_path, load
 from mmengine.logging import print_log
 from mmengine.utils import is_abs
-
+from itertools import chain, filterfalse, groupby
 from mmpose.registry import DATASETS
 from mmpose.datasets.datasets.utils import parse_pose_metainfo
 
@@ -340,6 +340,7 @@ class BaseStereoViewDataset(BaseDataset):
             data_info_bu = {
                 'img_ids': img_ids,
                 'img_paths': img_paths,
+                'img_id':img_id
             }
 
             for key in data_infos[0].keys():
@@ -370,5 +371,15 @@ class BaseStereoViewDataset(BaseDataset):
                         'id': list(),
                     }
                     data_list_bu.append(data_info_bu)
+        for item in data_list_bu:
+            assert len(item['area']) ==  len(item['right_area'])
 
+            assert  len(item['keypoints']) == len(item['right_keypoints'])
+
+            assert len(item['keypoints_visible']) == len(item['right_keypoints_visible'])
+            
+            assert len(item['bbox']) == len(item['right_bbox'])
+            
+            
+            
         return data_list_bu
