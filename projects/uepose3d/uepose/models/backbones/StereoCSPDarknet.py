@@ -33,59 +33,35 @@ class StereoCSPDarknet(BaseModule):
                      mode='fan_in',
                      nonlinearity='leaky_relu')):
         super().__init__()
-        self.left_CSP = CSPDarknet(
-               arch='P5',
-                 deepen_factor=1.0,
-                 widen_factor=1.0,
-                 out_indices=(2, 3, 4),
-                 frozen_stages=-1,
-                 use_depthwise=False,
-                 arch_ovewrite=None,
-                 spp_kernal_sizes=(5, 9, 13),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='Swish'),
-                 norm_eval=False,
-                 init_cfg=dict(
-                     type='Kaiming',
-                     layer='Conv2d',
-                     a=math.sqrt(5),
-                     distribution='uniform',
-                     mode='fan_in',
-                     nonlinearity='leaky_relu')
+        self.model = CSPDarknet(
+               arch,
+                 deepen_factor,
+                 widen_factor,
+                 out_indices,
+                 frozen_stages,
+                 use_depthwise,
+                 arch_ovewrite,
+                 spp_kernal_sizes,
+                 conv_cfg,
+                 norm_cfg,
+                 act_cfg,
+                 norm_eval,
+                 init_cfg
                 )
-        self.right_CSP = CSPDarknet(
-               arch='P5',
-                 deepen_factor=1.0,
-                 widen_factor=1.0,
-                 out_indices=(2, 3, 4),
-                 frozen_stages=-1,
-                 use_depthwise=False,
-                 arch_ovewrite=None,
-                 spp_kernal_sizes=(5, 9, 13),
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
-                 act_cfg=dict(type='Swish'),
-                 norm_eval=False,
-                 init_cfg=dict(
-                     type='Kaiming',
-                     layer='Conv2d',
-                     a=math.sqrt(5),
-                     distribution='uniform',
-                     mode='fan_in',
-                     nonlinearity='leaky_relu')
-                )
+       
     
     def _freeze_stages(self):
-        self.left_CSP._freeze_stages()
-        self.right_CSP._freeze_stages()
+        self.model._freeze_stages()
+
     
             
     def train(self, mode=True):
-        self.left_CSP.train(mode)
-        self.right_CSP.train(mode)
+        self.model.train(mode)
+
     
-    def forward(self,x):
-        left_out = self.left_CSP.forward(x[0])
-        right_out = self.right_CSP.forward(x[1])
-        return [left_out,right_out]
+    def forward(self,x,y):
+        x = self.model.forward(x)
+        with torch.no_grad():
+            y = self.model.forward(y)
+        return x,y
+        # return left_out

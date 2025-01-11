@@ -42,7 +42,6 @@ class StereoFilterAnnotations(FilterAnnotations):
             dict: Updated result dict.
         """
         import copy
-        y = copy.deepcopy(results)
         assert 'keypoints' in results
         kpts = results['keypoints']
         if kpts.shape[0] == 0:

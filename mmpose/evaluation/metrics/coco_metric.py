@@ -180,12 +180,100 @@ class CocoMetric(BaseMetric):
                     f'CocoMetric for dataset '
                     f"{dataset_meta['dataset_name']} has successfully "
                     f'loaded the annotation file from {ann_file}', 'current')
-    def process(self, data_batch, data_samples):
-        self.process_(data_batch,[data_samples[0]],"left")
-        self.process_(data_batch,[data_samples[1]],"right")
+    # def process(self, data_batch, data_samples):
+    #     self.process_(data_batch,[data_samples[0]],"left")
+    #     self.process_(data_batch,[data_samples[1]],"right")
 
-    def process_(self, data_batch: Sequence[dict],
-                data_samples: Sequence[dict],result_str):
+    # def process_(self, data_batch: Sequence[dict],
+    #             data_samples: Sequence[dict],result_str):
+    #     """Process one batch of data samples and predictions. The processed
+    #     results should be stored in ``self.results``, which will be used to
+    #     compute the metrics when all batches have been processed.
+
+    #     Args:
+    #         data_batch (Sequence[dict]): A batch of data
+    #             from the dataloader.
+    #         data_samples (Sequence[dict]): A batch of outputs from
+    #             the model, each of which has the following keys:
+
+    #             - 'id': The id of the sample
+    #             - 'img_id': The image_id of the sample
+    #             - 'pred_instances': The prediction results of instance(s)
+    #     """
+    #     # results = []
+    #     for data_sample in data_samples:
+    #         if 'pred_instances' not in data_sample:
+    #             raise ValueError(
+    #                 '`pred_instances` are required to process the '
+    #                 f'predictions results in {self.__class__.__name__}. ')
+
+    #         # keypoints.shape: [N, K, 2],
+    #         # N: number of instances, K: number of keypoints
+    #         # for topdown-style output, N is usually 1, while for
+    #         # bottomup-style output, N is the number of instances in the image
+    #         keypoints = data_sample['pred_instances']['keypoints']
+    #         # [N, K], the scores for all keypoints of all instances
+    #         keypoint_scores = data_sample['pred_instances']['keypoint_scores']
+    #         assert keypoint_scores.shape == keypoints.shape[:2]
+
+    #         # parse prediction results
+    #         pred = dict()
+    #         pred['id'] = data_sample['id']
+    #         pred['img_id'] = data_sample['img_id']
+
+    #         pred['keypoints'] = keypoints
+    #         pred['keypoint_scores'] = keypoint_scores
+    #         pred['category_id'] = data_sample.get('category_id', 1)
+    #         if 'bboxes' in data_sample['pred_instances']:
+    #             pred['bbox'] = bbox_xyxy2xywh(
+    #                 data_sample['pred_instances']['bboxes'])
+
+    #         if 'bbox_scores' in data_sample['pred_instances']:
+    #             # some one-stage models will predict bboxes and scores
+    #             # together with keypoints
+    #             bbox_scores = data_sample['pred_instances']['bbox_scores']
+    #         elif ('bbox_scores' not in data_sample['gt_instances']
+    #               or len(data_sample['gt_instances']['bbox_scores']) !=
+    #               len(keypoints)):
+    #             # bottom-up models might output different number of
+    #             # instances from annotation
+    #             bbox_scores = np.ones(len(keypoints))
+    #         else:
+    #             # top-down models use detected bboxes, the scores of which
+    #             # are contained in the gt_instances
+    #             bbox_scores = data_sample['gt_instances']['bbox_scores']
+    #         pred['bbox_scores'] = bbox_scores
+
+    #         # get area information
+    #         if 'bbox_scales' in data_sample['gt_instances']:
+    #             pred['areas'] = np.prod(
+    #                 data_sample['gt_instances']['bbox_scales'], axis=1)
+
+    #         # parse gt
+    #         gt = dict()
+    #         if self.coco is None:
+    #             gt['width'] = data_sample['ori_shape'][1]
+    #             gt['height'] = data_sample['ori_shape'][0]
+    #             gt['img_id'] = data_sample['img_id']
+    #             if self.iou_type == 'keypoints_crowd':
+    #                 assert 'crowd_index' in data_sample, \
+    #                     '`crowd_index` is required when `self.iou_type` is ' \
+    #                     '`keypoints_crowd`'
+    #                 gt['crowd_index'] = data_sample['crowd_index']
+    #             assert 'raw_ann_info' in data_sample, \
+    #                 'The row ground truth annotations are required for ' \
+    #                 'evaluation when `ann_file` is not provided'
+    #             anns = data_sample['raw_ann_info']
+    #             gt['raw_ann_info'] = anns if isinstance(anns, list) else [anns]
+
+    #         # add converted result to the results list
+    #         if result_str == 'left':
+    #             self.results_left.append((pred, gt))
+    #         if result_str == 'right':
+    #             self.results_right.append((pred,gt))
+        # return results
+    def process(self, data_batch: Sequence[dict],
+                data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -200,7 +288,6 @@ class CocoMetric(BaseMetric):
                 - 'img_id': The image_id of the sample
                 - 'pred_instances': The prediction results of instance(s)
         """
-        # results = []
         for data_sample in data_samples:
             if 'pred_instances' not in data_sample:
                 raise ValueError(
@@ -267,12 +354,7 @@ class CocoMetric(BaseMetric):
                 gt['raw_ann_info'] = anns if isinstance(anns, list) else [anns]
 
             # add converted result to the results list
-            if result_str == 'left':
-                self.results_left.append((pred, gt))
-            if result_str == 'right':
-                self.results_right.append((pred,gt))
-        # return results
-
+            self.results.append((pred, gt))
     def gt_to_coco_json(self, gt_dicts: Sequence[dict],
                         outfile_prefix: str) -> str:
         """Convert ground truth to coco format json file.

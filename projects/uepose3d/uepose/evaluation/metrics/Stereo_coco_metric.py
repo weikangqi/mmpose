@@ -71,7 +71,7 @@ class StereoCocoMetric(CocoMetric):
     # def compute_metrics(self, results: list) -> Dict[str, float]:
     #     super().compute_metrics(results)
         # super().compute_metrics(results[0])
-    def evaluate(self, size: int) -> dict:
+    def evaluatexx(self, size: int) -> dict:
         if len(self.results_left) == 0 or len(self.results_right) == 0:
             print_log(
                 f'{self.__class__.__name__} got empty `self.results`. Please '

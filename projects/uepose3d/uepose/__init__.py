@@ -1,4 +1,4 @@
-from .pose_estimator import StereoBottomupPoseEstimator
+# from .pose_estimator import StereoBottomupPoseEstimator
 # from .data_preprocessor import StereoPoseDataPreprocessor
 from .datasets import LoadStereoImage,StereoBottomupRandomAffine,StereoYOLOXHSVRandomAug,StereoRandomFlip,StereoPackPoseInputs,StereoGenerateTarget,StereoFilterAnnotations
 from .datasets import UnrealPose3dDataset,StereoBottomupResize
@@ -11,7 +11,7 @@ from .evaluation import StereoCocoMetric
 
 __all__ = [
     'StereoSimCC3DLabel',
-    'StereoBottomupPoseEstimator',
+    # 'StereoBottomupPoseEstimator',
     'LoadStereoImage','StereoBottomupRandomAffine',
     'StereoYOLOXHSVRandomAug','StereoRandomFlip',
     'StereoPackPoseInputs','StereoGenerateTarget',

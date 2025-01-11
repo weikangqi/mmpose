@@ -56,14 +56,14 @@ class StereoBottomupPoseEstimator(BottomupPoseEstimator):
             
         # else:
         # 正常的COCO的数据集
-        left_feats = self.extract_feat([left_input,right_input])
+        left_feats = self.extract_feat(left_input)
         # right_feats = self.extract_feat(right_input)
 
         losses = dict()
 
         if self.with_head:
             losses.update(
-                self.head.loss(left_feats, data_samples, train_cfg=self.train_cfg))
+                self.head.loss(left_feats, data_samples[0], train_cfg=self.train_cfg))
 
         return losses
     
@@ -109,8 +109,8 @@ class StereoBottomupPoseEstimator(BottomupPoseEstimator):
 
         # if not multiscale_test:
         #     feats = feats[0]
-        feats = self.extract_feat([left_input,right_input])
-        preds_left,preds_right = self.head.predict(feats, data_samples, test_cfg=self.test_cfg)
+        feats = self.extract_feat(left_input)
+        preds_left = self.head.predict(feats, data_samples[0], test_cfg=self.test_cfg)
 
         if isinstance(preds_left, tuple):
             batch_pred_instances_left, batch_pred_fields_left = preds_left
@@ -118,18 +118,19 @@ class StereoBottomupPoseEstimator(BottomupPoseEstimator):
             batch_pred_instances_left = preds_left
             batch_pred_fields_left = None
         
-        if isinstance(preds_right, tuple):
-            batch_pred_instances_right, batch_pred_fields_right = preds_right
-        else:
-            batch_pred_instances_right = preds_right
-            batch_pred_fields_right = None
+        # if isinstance(preds_right, tuple):
+        #     batch_pred_instances_right, batch_pred_fields_right = preds_right
+        # else:
+        #     batch_pred_instances_right = preds_right
+        #     batch_pred_fields_right = None
 
         results_left = self.add_pred_to_datasample(batch_pred_instances_left,
                                               batch_pred_fields_left, data_samples[0])
-        results_right = self.add_pred_to_datasample(batch_pred_instances_right,
-                                              batch_pred_fields_right, data_samples[1])
+        # results_right = self.add_pred_to_datasample(batch_pred_instances_right,
+        #                                       batch_pred_fields_right, data_samples[1])
 
-        return results_left+results_right
+        # return results_left+results_right
+        return results_left
         # 合并
         # return [results_left , results_right]
     def add_pred_to_datasample(self, batch_pred_instances: InstanceList,

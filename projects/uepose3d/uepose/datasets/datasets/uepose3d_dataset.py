@@ -220,7 +220,8 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
             cam_param['w'] = 640
             cam_param['h'] = 480
             cam_param = {'f': [cam_param['K'][0][0],cam_param['K'][1][1]], 'c': [cam_param['K'][0][2],cam_param['K'][1][2]]}
-            
+            x,y,max_x,max_y = bboxes[0]
+            x,y,max_x,max_y = bboxes[0]
             instance_info = {
                 'num_keypoints': num_keypoints,
                 'keypoints': kpts,
@@ -240,16 +241,16 @@ class UnrealPose3dDataset(BaseStereoViewDataset):
                 'camera_param': [cam_param],
                 'factor': factors,
                 'target_idx': target_idx,
-                'bbox': bboxes,
+                'bbox': np.array([[bboxes[0][0],bboxes[0][1],bboxes[0][0]+bboxes[0][2],bboxes[0][1]+bboxes[0][3]]]),
                 # 'bbox_scales': bbox_scales,
                 'bbox_score': bbox_scores,
-                'area': np.clip((bboxes[0][2] - bboxes[0][0])*(bboxes[0][3] - bboxes[0][1])*0.53,a_min=1.0,a_max=None),# [x_min, y_min, x_max, y_max]
+                'area': np.clip((bboxes[0][2] * bboxes[0][3])*0.53,a_min=1.0,a_max=None),# [x_min, y_min, x_max, y_max]
                 'right_keypoints': right_kpts,
                 'right_keypoints_visible': right_keypoints_visible,
-                'right_bbox': right_bboxes,
+                'right_bbox': np.array([[right_bboxes[0][0],right_bboxes[0][1],right_bboxes[0][0]+right_bboxes[0][2],right_bboxes[0][1]+right_bboxes[0][3]]]),
                 # 'right_bbox_scales': right_bbox_scales,
                 'right_bbox_score': right_bbox_scores,
-                'right_area':np.clip((right_bboxes[0][2] - right_bboxes[0][0])*(right_bboxes[0][3] - right_bboxes[0][1]),a_min=1.0,a_max=None)
+                'right_area':np.clip((right_bboxes[0][2] * right_bboxes[0][3])*0.53,a_min=1.0,a_max=None)
             }
 
             instance_list.append(instance_info)

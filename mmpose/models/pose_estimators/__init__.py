@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .bottomup import BottomupPoseEstimator
+from .bottomup import BottomupPoseEstimator,StereoBasePoseEstimator,StereoBottomupPoseEstimator
 from .pose_lifter import PoseLifter
 from .topdown import TopdownPoseEstimator
 

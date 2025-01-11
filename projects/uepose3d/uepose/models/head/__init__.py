@@ -1,1 +1,2 @@
-from .Stereortmo_head import StereoRTMO_Head
+from .Stereortmo_head import StereoRTMOHead
+from .Stereoyoloxpose_head import StereoYOLOXPoseHead

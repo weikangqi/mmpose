@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmpose.registry import DATASETS
-from ..base import BaseCocoStyleDataset
+from ..base import BaseStereoCocoStyleDataset
 
 
 @DATASETS.register_module()
-class UnrealPoseDataset(BaseCocoStyleDataset):
+class UnrealPoseDataset(BaseStereoCocoStyleDataset):
     """UnrealPose dataset for pose estimation.
 
     UnrealPose keypoints:

@@ -2,7 +2,7 @@ _base_ = ['../../../configs/_base_/default_runtime.py']
 custom_imports = dict(imports=['uepose'], allow_failed_imports=False)
 
 # runtime
-train_cfg = dict(max_epochs=1000, val_interval=2, dynamic_intervals=[(580, 1)])
+train_cfg = dict(max_epochs=1000, val_interval=5, dynamic_intervals=[(580, 1)])
 
 auto_scale_lr = dict(base_batch_size=256)
 
@@ -55,7 +55,7 @@ param_scheduler = [
 
 # data
 input_size = (640, 640)
-metafile = 'configs/_base_/datasets/uepose.py'
+metafile = '/root/mmpose/configs/_base_/datasets/uepose.py'
 codec = dict(type='StereoYOLOXPoseAnnotationProcessor', input_size=input_size)
 
 
@@ -82,15 +82,15 @@ train_pipeline = [
 ]
 
 data_mode = 'bottomup'
-data_root = '/mmpose/data'
+data_root = '/root/mmpose/data'
 samll_preifix = ''
 # train datasets
 dataset_usepose = dict(
     type='UnrealPose3dDataset',
     data_root=data_root,
     data_mode=data_mode,
-    ann_file='uecoco_3d/annotations/test_stereo.json',
-    data_prefix=dict(img='uecoco_3d/test_stereo'),
+    ann_file='uecoco_3d/annotations/train.json',
+    data_prefix=dict(img='uecoco_3d/train'),
     # pipeline=[
     #     dict(
     #         type='KeypointConverter',
@@ -106,14 +106,14 @@ train_dataset = dict(
     type='CombinedDataset',
     datasets=[dataset_usepose],
     pipeline=train_pipeline,
-    metainfo=dict(from_file='/mmpose3d/configs/_base_/datasets/uepose.py'),
+    metainfo=dict(from_file='/root/mmpose/configs/_base_/datasets/uepose.py'),
     test_mode=False)
 
 
 
 train_dataloader = dict(
-    batch_size=2,
-    num_workers=8,
+    batch_size=12,
+    num_workers=12,
     persistent_workers=True,
     pin_memory=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
@@ -160,8 +160,8 @@ val_dataloader = dict(
             type='UnrealPose3dDataset',
             data_root=data_root,
             data_mode=data_mode,
-            ann_file='uecoco_3d/annotations/test_stereo.json',
-            data_prefix=dict(img='uecoco_3d/test_stereo'),
+            ann_file='uecoco_3d/annotations/val.json',
+            data_prefix=dict(img='uecoco_3d/val'),
             test_mode=True,
             pipeline= val_pipeline
             #     dict(
@@ -174,8 +174,8 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
-    type='StereoCocoMetric',
-    ann_file=f'/mmpose/data/uecoco_3d/annotations/test_stereo.json',
+    type='CocoMetric',
+    ann_file=f'/root/mmpose/data/uecoco_3d/annotations/val.json',
     score_mode='bbox',
     nms_mode='none',
     # gt_converter= dict(
@@ -200,6 +200,7 @@ model = dict(
         distribution='uniform',
         mode='fan_in',
         nonlinearity='leaky_relu'),
+
     data_preprocessor=dict(
         type='StereoPoseDataPreprocessor',
         pad_size_divisor=32,
@@ -208,7 +209,7 @@ model = dict(
         batch_augments=[
         ]),
     backbone=dict(
-        type='StereoCSPDarknet',
+        type='CSPDarknet',
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         out_indices=(2, 3, 4),
@@ -224,8 +225,8 @@ model = dict(
         )
         ),
     neck=dict(
-        type='StereoHybridEncoder',
-        in_channels=[256, 512,1024 ],
+        type='HybridEncoder',
+        in_channels=[128, 256,512 ],
         deepen_factor=deepen_factor,
         widen_factor=widen_factor,
         hidden_dim=256,
@@ -246,7 +247,7 @@ model = dict(
             norm_cfg=dict(type='BN'),
             num_outs=2)),
     head=dict(
-        type='StereoRTMO_Head',
+        type='RTMOHead',
         num_keypoints=21,
         featmap_strides=(16, 32),
         head_module_cfg=dict(
@@ -311,6 +312,6 @@ model = dict(
     ),
     test_cfg=dict(
         input_size=input_size,
-        score_thr=0.7,
-        nms_thr=0.15,
+        score_thr=0.1,
+        nms_thr=0.65,
     ))

@@ -3,6 +3,7 @@ from .bottomup_transforms import *
 from .common_transforms import *
 from .formatting import *
 from .resize_transforms import *
+from .stereoLoad import *
 __all__ = [
     'LoadStereoImage',
     'StereoBottomupRandomAffine',
@@ -12,5 +13,7 @@ __all__ = [
     'StereoPackPoseInputs',
     'StereoFilterAnnotations',
     'StereoBottomupResize',
-    'StereoInputResize'
+    'StereoInputResize',
+    'LoadStereoImageFromFile',
+    'Load2Image'
 ]
